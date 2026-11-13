@@ -45,6 +45,10 @@ Each project profile is declarative and must define at least:
 
 Profiles are parsed as data, never sourced as shell code. Unknown or unsupported values must be rejected before build execution.
 
+## Batch build and validation plan
+
+The complete package pipeline is tracked in [MLFS Batch Build and Validation Pipeline](MLFS-BATCH-PIPELINE.md). Packages will be grouped by dependency stage and parallelized only where safe; each stage must pass source, build, ABI, filesystem, and integration checks before its artifact can feed the next stage.
+
 ## Real build architecture
 
 1. **Build host validation:** verify Linux host requirements, PTY, compilers, multilib execution, disk, memory, and required utilities.
