@@ -14,7 +14,7 @@ log() { printf '[barelinux-full-mlfs] %s\n' "$*" >&2; }
 WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 
-for tool in bash make tar python3 realpath stat df awk grep find sort sha256sum sudo mountpoint script getent groupadd useradd chown; do
+for tool in bash make tar python3 realpath stat df awk grep find sort sha256sum sudo mountpoint script getent groupadd useradd chown visudo; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
@@ -81,6 +81,15 @@ sudo groupadd --gid "$LFS_GID" lfs
 sudo useradd --uid "$LFS_UID" --gid "$LFS_GID" --create-home --home-dir /home/lfs --shell /bin/bash --skel /dev/null lfs
 sudo tar --same-owner -xJf "$LFS_HOME_ARCHIVE" -C /home
 sudo chown -R lfs:lfs /home/lfs
+
+# jhalfs alternates between the unprivileged LFS build user and root-owned
+# book steps. The runner is disposable; grant the temporary lfs account
+# passwordless sudo only for this CI build and always remove the rule on exit.
+SUDOERS_FILE="/etc/sudoers.d/barelinux-lfs-build"
+[[ ! -e "$SUDOERS_FILE" ]] || fail "temporary BareLinux LFS sudoers rule already exists"
+printf '%s\\n' 'lfs ALL=(ALL) NOPASSWD: ALL' | sudo tee "$SUDOERS_FILE" >/dev/null
+sudo chmod 0440 "$SUDOERS_FILE"
+sudo visudo -cf "$SUDOERS_FILE" >/dev/null
 mkdir -p "$STAGE"
 
 export LFS="$TARGET"
@@ -94,9 +103,12 @@ export PATH="$TOOLS/bin:$TOOLS/$LFS_TGT/bin:$PATH"
 MOUNTPOINT="/mnt/barelinux-lfs"
 sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
-sudo mount --bind "$TARGET" "$MOUNTPOINT"
-cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
+cleanup_build_mount() {
+  mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"
+  sudo rm -f "$SUDOERS_FILE"
+}
 trap cleanup_build_mount EXIT
+sudo mount --bind "$TARGET" "$MOUNTPOINT"
 
 log "Running the complete jhalfs-generated MLFS Makefile; no BREAKPOINT is set"
 log "This executes the dependency graph beyond GCC Pass 1 through the final MLFS book targets"
