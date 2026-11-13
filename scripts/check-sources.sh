@@ -13,12 +13,12 @@ fail() {
 
 expected=5
 count=0
-while IFS=$'\t' read -r package version url; do
+missing_digests=0
+while IFS=$'\t' read -r package version url digest; do
     [[ -z "${package:-}" || "$package" == \#* ]] && continue
-    [[ -n "${version:-}" && -n "${url:-}" ]] ||
+    [[ -n "${version:-}" && -n "${url:-}" && -n "${digest:-}" ]] ||
         fail "Malformed manifest row for package: ${package:-unknown}"
-    [[ "$url" == https://* ]] ||
-        fail "Non-HTTPS source URL for $package"
+    [[ "$url" == https://* ]] || fail "Non-HTTPS source URL for $package"
     case "$package" in
         binutils) [[ "$version" == "2.47" ]] || fail "Unexpected Binutils version" ;;
         gcc)      [[ "$version" == "16.2.0" ]] || fail "Unexpected GCC version" ;;
@@ -27,11 +27,19 @@ while IFS=$'\t' read -r package version url; do
         systemd)  [[ "$version" == "261.2" ]] || fail "Unexpected systemd version" ;;
         *) fail "Unexpected package in initial source manifest: $package" ;;
     esac
+    if [[ "$digest" == "-" ]]; then
+        missing_digests=$((missing_digests + 1))
+    elif [[ ! "$digest" =~ ^[[:xdigit:]]{64}$ ]]; then
+        fail "Invalid SHA-256 digest for $package"
+    fi
     count=$((count + 1))
 done < "$MANIFEST"
 
-[[ "$count" -eq "$expected" ]] ||
-    fail "Expected $expected pinned packages, found $count"
+[[ "$count" -eq "$expected" ]] || fail "Expected $expected pinned packages, found $count"
 
 printf 'BareLinux MLFS 13.1 source manifest: OK (%s packages)\n' "$count"
-printf 'NOTE: checksum verification is not enabled yet; builds must not download these sources.\n'
+if [[ "$missing_digests" -gt 0 ]]; then
+    printf 'INTEGRITY GATE: BLOCKED (%s SHA-256 digests still need verification)\n' "$missing_digests"
+else
+    printf 'INTEGRITY GATE: READY (all SHA-256 digests present)\n'
+fi
