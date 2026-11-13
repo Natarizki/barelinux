@@ -15,7 +15,7 @@ ISO="${OUTPUT_DIR}/barelinux-x86_64.iso"
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"; }
 
-for cmd in mksquashfs cpio gzip xorriso sha256sum file; do need "$cmd"; done
+for cmd in mksquashfs cpio gzip xorriso sha256sum file readelf grep find install ln rm chmod; do need "$cmd"; done
 [[ -d "$ROOTFS" ]] || fail "Root filesystem directory not found: $ROOTFS"
 [[ -s "$KERNEL" ]] || fail "Kernel image not found: $KERNEL"
 [[ -x "$BUSYBOX" ]] || fail "A static BusyBox executable is required: $BUSYBOX"
