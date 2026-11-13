@@ -57,3 +57,18 @@ The ALFS–MLFS integration is not considered complete until CI demonstrates all
 - a deliberately unsupported or altered book input fails closed.
 
 Until those gates pass, the existing Binutils Pass 1 workflow remains the only proven package build. It must not be described as proof that the full ALFS–MLFS integration works.
+
+
+## Confirmed jhalfs adapter surface
+
+The pinned jhalfs revision exposes the required integration points in its own source:
+
+- `Config.in` provides a **Local Copy** book-source mode and a `BOOK` path setting.
+- `common/libs/func_book_parser` uses the configured local `BOOK` tree when `WORKING_COPY` is enabled, then profiles `index.xml` and invokes the LFS extraction stylesheet.
+- The same configuration still contains legacy `ml_32`, `ml_x32`, and `ml_all` profile choices. MLFS 13.1's current book has moved away from the old `ARCH` rendering parameter and presents 32-bit support as part of the current multilib book. Therefore the adapter tests the raw book with the legacy architecture profile set to `default`, rather than asking jhalfs to filter it using an obsolete profile name.
+
+This is a reason to prefer the local-copy adapter: it prevents jhalfs from fetching a different LFS book or silently substituting a vanilla LFS branch.
+
+The new source-audit workflow performs the first actual compatibility check: it fetches raw MLFS and the pinned jhalfs source, profiles the MLFS XML as systemd, and runs jhalfs's own LFS extraction XSLT against that profiled book. It then inventories the generated command scripts and checks for multilib-related commands.
+
+Passing this XSLT test proves only that recipe generation works structurally. It does **not** prove that every generated command is semantically correct, that jhalfs' full Makefile orchestration is safe for BareLinux, or that any package has been compiled. Generated scripts still require review and package-level build tests before they can enter the production pipeline.
