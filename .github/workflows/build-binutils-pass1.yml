@@ -44,6 +44,7 @@ jobs:
         if: success()
         run: |
           tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/binutils-pass1-build-root.tar.xz" target
+          sudo tar -C /home -cJf "$RUNNER_TEMP/lfs-home.tar.xz" lfs
           cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
 
       - name: Upload verified Binutils Pass 1 artifact
@@ -53,6 +54,7 @@ jobs:
           name: barelinux-mlfs-13.1-binutils-pass1
           path: |
             ${{ runner.temp }}/binutils-pass1-build-root.tar.xz
+            ${{ runner.temp }}/lfs-home.tar.xz
             ${{ runner.temp }}/BUILD-SUCCESS
           if-no-files-found: error
           retention-days: 14
