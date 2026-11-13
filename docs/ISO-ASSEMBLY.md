@@ -13,7 +13,7 @@ Set these environment variables to override defaults:
 - `BARELINUX_LIMINE_DIR` (default `work/limine/`): Limine v12+ assets `limine-bios-cd.bin`, `limine-uefi-cd.bin`, `limine-bios.sys`, `BOOTX64.EFI`, and the executable `limine` CLI
 - `BARELINUX_OUTPUT_DIR` (default `out/`)
 
-The root filesystem must contain executable systemd at `/usr/lib/systemd/systemd` or `/lib/systemd/systemd`, plus `/etc/os-release`. The kernel must have built-in support for the live-media path: devtmpfs, procfs, sysfs, ISO-9660, loop devices, SquashFS with gzip compression, overlayfs, and tmpfs. The initramfs BusyBox must be static.
+The root filesystem must contain executable systemd at `/usr/lib/systemd/systemd` or `/lib/systemd/systemd`, plus `/etc/os-release`. The kernel `.config` must pass `scripts/check-kernel-config.sh`; required symbols are listed in `config/kernel-live.required` and must be built in (`=y`), not modules. The kernel must have built-in support for the live-media path: devtmpfs, procfs, sysfs, ISO-9660, loop devices, SquashFS with gzip compression, overlayfs, and tmpfs. The initramfs BusyBox must be static.
 
 ## Output and boot path
 
