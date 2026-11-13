@@ -65,8 +65,13 @@ jobs:
           ARTIFACT="$RUNNER_TEMP/binutils-artifact"
           MARKER="$ARTIFACT/BUILD-SUCCESS"
           ARCHIVE="$ARTIFACT/binutils-pass1-build-root.tar.xz"
+          HOME_ARCHIVE="$ARTIFACT/lfs-home.tar.xz"
           test -s "$MARKER"
           test -s "$ARCHIVE"
+          test -s "$HOME_ARCHIVE"
+          LFS_UID="$(awk -F= '$1=="lfs_uid" {print $2}' "$MARKER")"
+          LFS_GID="$(awk -F= '$1=="lfs_gid" {print $2}' "$MARKER")"
+          [[ "$LFS_UID" =~ ^[0-9]+$ && "$LFS_GID" =~ ^[0-9]+$ ]]
           grep -Fxq 'stage=binutils-pass1' "$MARKER"
           grep -Fxq 'status=success' "$MARKER"
           MLFS_COMMIT="$(awk -F= '$1=="MLFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
@@ -95,14 +100,37 @@ jobs:
                   elif not (item.isfile() or item.isdir()):
                       raise SystemExit(f"unsupported artifact member: {name!r}")
           PY
+          python3 - "$HOME_ARCHIVE" <<'PY'
+          import posixpath, sys, tarfile
+          with tarfile.open(sys.argv[1], "r:xz") as tf:
+              members = tf.getmembers()
+              if not members:
+                  raise SystemExit("empty LFS home artifact")
+              for item in members:
+                  name = item.name
+                  if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")[:-1]):
+                      raise SystemExit(f"unsafe LFS home path: {name!r}")
+                  if name.split("/", 1)[0] != "lfs":
+                      raise SystemExit(f"unexpected LFS home root: {name!r}")
+                  if item.issym() or item.islnk():
+                      target = item.linkname
+                      if target.startswith("/"):
+                          raise SystemExit(f"absolute LFS home link rejected: {name!r}")
+                      resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
+                      if resolved == ".." or resolved.startswith("../") or not resolved.startswith("lfs/"):
+                          raise SystemExit(f"LFS home link escapes lfs/: {name!r}")
+                  elif not (item.isfile() or item.isdir()):
+                      raise SystemExit(f"unsupported LFS home member: {name!r}")
+          PY
           mkdir -p "$RUNNER_TEMP/barelinux-mlfs"
-          tar --no-same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs"
+          sudo tar --same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs"
           test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/ld"
           test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/as"
 
       - name: Generate and execute ALFS GCC Pass 1 recipe
         env:
           BLF_BUILD_JOBS: "2"
+          LFS_HOME_ARCHIVE: ${{ runner.temp }}/binutils-artifact/lfs-home.tar.xz
         run: |
           bash scripts/build-gcc-pass1-alfs.sh "$RUNNER_TEMP/barelinux-mlfs"
 
@@ -110,6 +138,7 @@ jobs:
         if: success()
         run: |
           tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/gcc-pass1-build-root.tar.xz" target
+          sudo tar -C /home -cJf "$RUNNER_TEMP/lfs-home.tar.xz" lfs
           cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/gcc-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
 
       - name: Upload verified GCC Pass 1 artifact
@@ -119,6 +148,7 @@ jobs:
           name: barelinux-mlfs-13.1-gcc-pass1
           path: |
             ${{ runner.temp }}/gcc-pass1-build-root.tar.xz
+            ${{ runner.temp }}/lfs-home.tar.xz
             ${{ runner.temp }}/BUILD-SUCCESS
           if-no-files-found: error
           retention-days: 14
