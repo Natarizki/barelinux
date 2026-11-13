@@ -1,6 +1,6 @@
 # BareLinux Core Build System
 
-**Status:** Workspace CLI is implemented. Raw MLFS 13.1 and jhalfs are pinned; jhalfs has successfully generated the MLFS package command scripts. The first package workflow is being migrated to execute the generated ALFS recipe. The complete build engine and bootable ISO exporter remain under development.
+**Status:** The workspace CLI now exposes a staged MLFS build plan and entry points for the local Binutils bootstrap and the continuous ALFS full-book build. Raw MLFS 13.1 and jhalfs are pinned. The full-book entry point requires the verified ALFS Binutils checkpoint and matching LFS home archive; it does not fake or skip missing prerequisites. The complete build engine and bootable ISO exporter remain under development.
 
 BareLinux is built from source using **raw Multilib Linux From Scratch (MLFS) 13.1**. **ALFS/jhalfs** is the automation engine. The official MLFS book remains the authority for package instructions and multilib procedures; BareLinux's adapter connects that raw book to jhalfs without silently converting it to vanilla LFS. This build system is mandatory to BareLinux's engineering architecture.
 
@@ -19,7 +19,7 @@ See [ALFS + Raw MLFS Integration](ALFS-MLFS-INTEGRATION.md) for upstream source 
 
 ## User-facing workflow
 
-The workspace CLI currently supports project creation, profile validation, status, and a factory shell:
+The workspace CLI supports project creation, profile validation, status, a factory shell, build planning, and gated build-stage execution:
 
 ```sh
 lfs init MyDistro
@@ -29,7 +29,7 @@ lfs MyDistro build
 lfs MyDistro export
 ```
 
-The CLI is not yet the complete build system. At present, `lfs enter` opens a workspace shell and is **not** a chroot or security boundary. `build` and `export` fail closed until their real engines and acceptance tests are implemented.
+The CLI is not yet the complete build system. `lfs enter` opens a workspace shell and is **not** a chroot or security boundary. `build plan` prints the dependency-ordered roadmap. `build binutils-pass1` runs the local isolated bootstrap script. `build full-book` invokes the complete jhalfs Makefile through the full-MLFS runner, but only when the exact verified ALFS checkpoint and matching LFS home archive are supplied. `export` remains fail-closed until the integrated rootfs and boot artifacts pass acceptance tests.
 
 ## Distro profile
 
