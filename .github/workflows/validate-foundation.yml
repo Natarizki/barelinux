@@ -27,6 +27,7 @@ jobs:
           bash -n scripts/check-toolchain.sh
           bash -n scripts/check-host.sh
           bash -n scripts/check-package-inventory.sh
+          bash -n scripts/check-patch-inventory.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
@@ -44,6 +45,9 @@ jobs:
 
       - name: Validate MLFS 13.1 package inventory
         run: bash scripts/check-package-inventory.sh
+
+      - name: Validate MLFS 13.1 required patch inventory
+        run: bash scripts/check-patch-inventory.sh
 
       - name: Validate pinned source versions and integrity gate
         run: bash scripts/check-sources.sh
