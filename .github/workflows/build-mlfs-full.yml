@@ -1,0 +1,154 @@
+name: Build Full MLFS Base with ALFS
+
+on:
+  workflow_run:
+    workflows: ["Build Binutils Pass 1"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      binutils_run_id:
+        description: "Successful Build Binutils Pass 1 workflow run ID"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  full-mlfs:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    name: Execute the complete raw MLFS book through jhalfs
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out BareLinux
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space for the source build
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h
+
+      - name: Install MLFS and ALFS host prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential bison flex gawk texinfo gperf expect dejagnu \
+            python3 perl patch make gcc g++ git curl wget ca-certificates \
+            file bc xz-utils zstd bzip2 gzip unzip zip tar sudo util-linux \
+            xsltproc libxml2-utils docbook-xml docbook-xsl libncurses-dev \
+            libelf-dev libssl-dev gettext libtool pkg-config
+
+      - name: Validate full-build script syntax
+        run: |
+          bash -n scripts/build-mlfs-full-alfs.sh
+          bash -n scripts/validate-alfs-mlfs-sources.sh
+
+      - name: Resolve successful Binutils workflow run
+        id: binutils
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RUN_ID="${{ github.event.workflow_run.id || inputs.binutils_run_id }}"
+          if [[ -z "$RUN_ID" ]]; then
+            RUN_ID="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/build-binutils-pass1.yml/runs?status=success&per_page=20" --jq '.workflow_runs[] | select(.conclusion == "success") | .id' | head -n 1)"
+          fi
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "No successful Binutils Pass 1 run ID found" >&2; exit 1; }
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Using verified Binutils Pass 1 run: $RUN_ID"
+
+      - name: Download verified Binutils Pass 1 checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: barelinux-mlfs-13.1-binutils-pass1
+          path: ${{ runner.temp }}/binutils-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.binutils.outputs.run_id }}
+
+      - name: Validate and restore the Binutils checkpoint
+        run: |
+          set -euo pipefail
+          ARTIFACT="$RUNNER_TEMP/binutils-artifact"
+          MARKER="$ARTIFACT/BUILD-SUCCESS"
+          ARCHIVE="$ARTIFACT/binutils-pass1-build-root.tar.xz"
+          HOME_ARCHIVE="$ARTIFACT/lfs-home.tar.xz"
+          test -s "$MARKER"
+          test -s "$ARCHIVE"
+          test -s "$HOME_ARCHIVE"
+          grep -Fxq 'artifact_schema=2' "$MARKER"
+          grep -Fxq 'stage=binutils-pass1' "$MARKER"
+          grep -Fxq 'status=success' "$MARKER"
+          MLFS_COMMIT="$(awk -F= '$1=="MLFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
+          JHALFS_COMMIT="$(awk -F= '$1=="JHALFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
+          grep -Fxq "mlfs_commit=$MLFS_COMMIT" "$MARKER"
+          grep -Fxq "jhalfs_commit=$JHALFS_COMMIT" "$MARKER"
+          python3 - "$ARCHIVE" <<'PY'
+          import posixpath, sys, tarfile
+          with tarfile.open(sys.argv[1], "r:xz") as tf:
+              members = tf.getmembers()
+              if not members:
+                  raise SystemExit("empty Binutils build-root archive")
+              for item in members:
+                  name = item.name
+                  if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")[:-1]):
+                      raise SystemExit(f"unsafe build-root path: {name!r}")
+                  if name.split("/", 1)[0] != "target":
+                      raise SystemExit(f"unexpected build-root member: {name!r}")
+                  if item.issym() or item.islnk():
+                      link = item.linkname
+                      if link.startswith("/"):
+                          raise SystemExit(f"absolute build-root link rejected: {name!r}")
+                      resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), link))
+                      if resolved == ".." or resolved.startswith("../") or not resolved.startswith("target/"):
+                          raise SystemExit(f"build-root link escapes target/: {name!r}")
+                  elif not (item.isfile() or item.isdir()):
+                      raise SystemExit(f"unsupported build-root member: {name!r}")
+          PY
+          mkdir -p "$RUNNER_TEMP/barelinux-mlfs"
+          sudo tar --same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs"
+          test -s "$RUNNER_TEMP/barelinux-mlfs/target/jhalfs/Makefile"
+          test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/ld"
+          test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/as"
+
+      - name: Execute the complete MLFS book with jhalfs
+        env:
+          BLF_BUILD_JOBS: "2"
+          LFS_HOME_ARCHIVE: ${{ runner.temp }}/binutils-artifact/lfs-home.tar.xz
+        run: |
+          bash scripts/build-mlfs-full-alfs.sh "$RUNNER_TEMP/barelinux-mlfs"
+
+      - name: Package the verified MLFS base system
+        if: success()
+        run: |
+          tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/mlfs-full-build-root.tar.xz" target
+          sudo tar -C /home -cJf "$RUNNER_TEMP/lfs-home.tar.xz" lfs
+          cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/full-book/MLFS-BASE-SUCCESS" "$RUNNER_TEMP/"
+
+      - name: Upload verified MLFS base artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-13.1-full-base
+          path: |
+            ${{ runner.temp }}/mlfs-full-build-root.tar.xz
+            ${{ runner.temp }}/lfs-home.tar.xz
+            ${{ runner.temp }}/MLFS-BASE-SUCCESS
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload full-book logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-full-book-failure-logs
+          path: |
+            ${{ runner.temp }}/barelinux-mlfs/target/build/mlfs-13.1/full-book/*.log
+            ${{ runner.temp }}/barelinux-mlfs/target/jhalfs/logs/**
+            ${{ runner.temp }}/barelinux-mlfs/target/jhalfs/test-logs/**
+          if-no-files-found: ignore
+          retention-days: 7
