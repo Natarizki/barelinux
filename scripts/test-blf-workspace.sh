@@ -14,6 +14,10 @@ INSTALLED="$DEST/usr/local/bin/lfs"
 bash "$LFS" help | grep -q "lfs doctor"
 bash "$LFS" init TestDistro
  grep -Fxq 'BUILD_SYSTEM=mlfs' "$BLF_HOME/workspaces/TestDistro/distro.conf"
+grep -Fxq 'BUILD_AUTOMATION=alfs' "$BLF_HOME/workspaces/TestDistro/distro.conf"
+grep -Fxq 'MLFS_VERSION=13.1' "$BLF_HOME/workspaces/TestDistro/distro.conf"
+grep -Fxq 'MLFS_COMMIT=3d65852c3f2506a7bd1a0e052d43a5a3499a079f' "$BLF_HOME/workspaces/TestDistro/distro.conf"
+grep -Fxq 'JHALFS_COMMIT=a13fd9828b8c28d02dfde824a441cd7dd3a1643d' "$BLF_HOME/workspaces/TestDistro/distro.conf"
 [[ -f "$BLF_HOME/workspaces/TestDistro/distro.conf" ]]
 for d in sources build rootfs output logs; do
   [[ -d "$BLF_HOME/workspaces/TestDistro/$d" ]]
