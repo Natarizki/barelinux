@@ -109,9 +109,8 @@ for archive, root in zip(sys.argv[1:], expected):
                 raise SystemExit(f"unsupported archive member type: {name!r}")
 PY
 
-: > "$TARGET/usr-share-config-site.tmp"
-mkdir -p "$TARGET/usr/share"
-mv "$TARGET/usr-share-config-site.tmp" "$TARGET/usr/share/config.site"
+sudo mkdir -p "$TARGET/usr/share"
+sudo install -m 0644 /dev/null "$TARGET/usr/share/config.site"
 export LFS="$TARGET"
 export LFS_TGT=x86_64-lfs-linux-gnu
 export CONFIG_SITE="$TARGET/usr/share/config.site"
