@@ -13,11 +13,11 @@ Set these environment variables to override defaults:
 - `BARELINUX_LIMINE_DIR` (default `work/limine/`): Limine v12+ assets `limine-bios-cd.bin`, `limine-uefi-cd.bin`, `limine-bios.sys`, `BOOTX64.EFI`, and the executable `limine` CLI
 - `BARELINUX_OUTPUT_DIR` (default `out/`)
 
-The root filesystem must contain executable systemd at `/usr/lib/systemd/systemd` or `/lib/systemd/systemd`, plus `/etc/os-release`. The kernel must have built-in support for the live-media path: devtmpfs, ISO-9660, loop devices, SquashFS, and the gzip SquashFS compressor. The initramfs BusyBox must be static.
+The root filesystem must contain executable systemd at `/usr/lib/systemd/systemd` or `/lib/systemd/systemd`, plus `/etc/os-release`. The kernel must have built-in support for the live-media path: devtmpfs, procfs, sysfs, ISO-9660, loop devices, SquashFS with gzip compression, overlayfs, and tmpfs. The initramfs BusyBox must be static.
 
 ## Output and boot path
 
-The script creates `out/barelinux-x86_64.iso` and a SHA-256 sidecar. It embeds the rootfs as a read-only SquashFS image, uses a small initramfs to mount the ISO and SquashFS root, and hands off to systemd. Limine's BIOS and UEFI CD boot assets are included; the generated ISO is then processed with `limine bios-install`.
+The script creates `out/barelinux-x86_64.iso` and a SHA-256 sidecar. It embeds the rootfs as a read-only SquashFS image, uses a small initramfs to mount the ISO and SquashFS root, creates temporary writable overlays for `/etc`, `/var`, and `/home`, preserves `/dev`, `/proc`, and `/sys`, and hands off to systemd. Limine's BIOS and UEFI CD boot assets are included; the generated ISO is then processed with `limine bios-install`.
 
 This script deliberately refuses incomplete inputs. It does not download unverified bootloader assets, invent a kernel/rootfs, or claim that an image is bootable merely because xorriso returned success.
 
