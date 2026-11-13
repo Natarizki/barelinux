@@ -28,6 +28,8 @@ jobs:
           bash -n scripts/check-host.sh
           bash -n scripts/check-package-inventory.sh
           bash -n scripts/check-patch-inventory.sh
+          bash -n scripts/build-iso.sh
+          bash -n scripts/test-iso-builder.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
@@ -42,6 +44,9 @@ jobs:
             -w /workspace \
             archlinux:latest \
             bash -euc 'sed -i "/^#\\[multilib\\]/,/^#Include =/s/^#//" /etc/pacman.conf; pacman -Sy --noconfirm --needed base-devel perl python texinfo lib32-glibc lib32-gcc-libs; bash scripts/check-host.sh'
+
+      - name: Test ISO builder rejects incomplete inputs
+        run: bash scripts/test-iso-builder.sh
 
       - name: Validate MLFS 13.1 package inventory
         run: bash scripts/check-package-inventory.sh
