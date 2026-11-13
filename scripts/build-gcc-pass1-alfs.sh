@@ -38,8 +38,10 @@ SOURCES="$TARGET/sources"
 TOOLS="$TARGET/tools"
 STAGE="$TARGET/build/mlfs-13.1/gcc-pass1"
 RECIPE="$ALFS_WORK/audit/commands/chapter05/502-gcc-pass1"
-[[ ! -e "$ALFS_WORK" && ! -e "$TARGET" ]] || fail "workspace already contains alfs/ or target/; use a fresh workspace"
-mkdir -p "$SOURCES" "$TOOLS" "$STAGE"
+[[ ! -e "$ALFS_WORK" ]] || fail "ALFS audit directory already exists; use a fresh workspace"
+[[ -d "$TOOLS" ]] || fail "Binutils Pass 1 tools prefix is missing; install the verified prerequisite artifact first"
+[[ -x "$TOOLS/$LFS_TGT/bin/ld" || -x "$TOOLS/bin/$LFS_TGT-ld" ]] || true
+mkdir -p "$SOURCES" "$STAGE"
 
 log "Generating the GCC recipe from the pinned raw MLFS book and jhalfs"
 bash "$ROOT_DIR/scripts/validate-alfs-mlfs-sources.sh" "$ALFS_WORK"
