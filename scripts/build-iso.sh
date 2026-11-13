@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+WORK_DIR="${BARELINUX_WORK_DIR:-${ROOT_DIR}/work}"
+ROOTFS="${BARELINUX_ROOTFS:-${WORK_DIR}/rootfs}"
+KERNEL="${BARELINUX_KERNEL:-${WORK_DIR}/kernel/bzImage}"
+BUSYBOX="${BARELINUX_BUSYBOX:-${WORK_DIR}/initramfs-tools/busybox}"
+LIMINE_DIR="${BARELINUX_LIMINE_DIR:-${WORK_DIR}/limine}"
+OUTPUT_DIR="${BARELINUX_OUTPUT_DIR:-${ROOT_DIR}/out}"
+STAGING="${WORK_DIR}/iso-root"
+INITRD_ROOT="${WORK_DIR}/initramfs-root"
+ISO="${OUTPUT_DIR}/barelinux-x86_64.iso"
+
+fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"; }
+
+for cmd in mksquashfs cpio gzip xorriso sha256sum file; do need "$cmd"; done
+[[ -d "$ROOTFS" ]] || fail "Root filesystem directory not found: $ROOTFS"
+[[ -s "$KERNEL" ]] || fail "Kernel image not found: $KERNEL"
+[[ -x "$BUSYBOX" ]] || fail "A static BusyBox executable is required: $BUSYBOX"
+[[ -d "$LIMINE_DIR" ]] || fail "Limine asset directory not found: $LIMINE_DIR"
+
+SYSTEMD="$ROOTFS/usr/lib/systemd/systemd"
+[[ -x "$SYSTEMD" ]] || SYSTEMD="$ROOTFS/lib/systemd/systemd"
+[[ -x "$SYSTEMD" ]] || fail "Rootfs must contain executable systemd at /usr/lib/systemd/systemd or /lib/systemd/systemd"
+[[ -f "$ROOTFS/etc/os-release" ]] || fail "Rootfs is missing /etc/os-release"
+
+# Verify that BusyBox is static: the initramfs must not depend on the target rootfs.
+if readelf -l "$BUSYBOX" 2>/dev/null | grep -q 'INTERP'; then
+    fail "BusyBox is dynamically linked; build a static BusyBox for the initramfs"
+fi
+
+find_limine_asset() {
+    local name="$1"
+    local found
+    found="$(find "$LIMINE_DIR" -type f -name "$name" -print -quit)"
+    [[ -n "$found" ]] || fail "Missing Limine asset: $name"
+    printf '%s' "$found"
+}
+
+LIMINE_BIOS_CD="$(find_limine_asset limine-bios-cd.bin)"
+LIMINE_UEFI_CD="$(find_limine_asset limine-uefi-cd.bin)"
+LIMINE_BIOS_SYS="$(find_limine_asset limine-bios.sys)"
+LIMINE_EFI="$(find_limine_asset BOOTX64.EFI)"
+LIMINE_CLI="$(find "$LIMINE_DIR" -type f -name limine -perm -u+x -print -quit)"
+[[ -n "$LIMINE_CLI" ]] || fail "Missing executable Limine CLI (v12+ limine bios-install)"
+
+rm -rf "$STAGING" "$INITRD_ROOT"
+mkdir -p "$STAGING/boot" "$STAGING/EFI/BOOT" "$INITRD_ROOT/bin" "$INITRD_ROOT/dev" "$INITRD_ROOT/proc" "$INITRD_ROOT/sys" "$INITRD_ROOT/run" "$OUTPUT_DIR"
+
+# Build a compressed immutable live root. The initramfs mounts the ISO and
+# then mounts this SquashFS image read-only before handing control to systemd.
+mksquashfs "$ROOTFS" "$STAGING/boot/rootfs.squashfs" -comp gzip -noappend -all-root
+install -m 0644 "$KERNEL" "$STAGING/boot/vmlinuz"
+install -m 0644 "$LIMINE_BIOS_SYS" "$STAGING/limine-bios.sys"
+install -m 0644 "$LIMINE_BIOS_CD" "$STAGING/boot/limine-bios-cd.bin"
+install -m 0644 "$LIMINE_UEFI_CD" "$STAGING/boot/limine-uefi-cd.bin"
+install -m 0644 "$LIMINE_EFI" "$STAGING/EFI/BOOT/BOOTX64.EFI"
+install -m 0755 "$BUSYBOX" "$INITRD_ROOT/bin/busybox"
+
+for applet in sh mount mkdir sleep switch_root; do
+    ln -s busybox "$INITRD_ROOT/bin/$applet"
+done
+
+cat > "$INITRD_ROOT/init" <<'INIT'
+#!/bin/sh
+PATH=/bin
+export PATH
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mkdir -p /run/iso /newroot
+n=0
+while [ ! -b /dev/sr0 ] && [ "$n" -lt 30 ]; do
+    sleep 1
+    n=$((n + 1))
+done
+if [ ! -b /dev/sr0 ]; then
+    echo "BareLinux: installation media device /dev/sr0 not found"
+    exec /bin/sh
+fi
+if ! mount -t iso9660 -o ro /dev/sr0 /run/iso; then
+    echo "BareLinux: could not mount ISO9660 media"
+    exec /bin/sh
+fi
+if ! mount -t squashfs -o loop,ro /run/iso/boot/rootfs.squashfs /newroot; then
+    echo "BareLinux: could not mount immutable root filesystem"
+    exec /bin/sh
+fi
+mkdir -p /newroot/run/iso
+mount --move /run/iso /newroot/run/iso
+echo "BareLinux: handing off to systemd"
+exec switch_root /newroot /usr/lib/systemd/systemd
+echo "BareLinux: systemd handoff failed"
+exec /bin/sh
+INIT
+chmod 0755 "$INITRD_ROOT/init"
+
+(
+    cd "$INITRD_ROOT"
+    find . -print0 | cpio --null -o --format=newc 2>/dev/null | gzip -9
+) > "$STAGING/boot/initramfs.cpio.gz"
+
+cat > "$STAGING/limine.conf" <<'CONF'
+timeout: 5
+default_entry: BareLinux
+
+/BareLinux
+    protocol: linux
+    kernel_path: boot():/boot/vmlinuz
+    module_path: boot():/boot/initramfs.cpio.gz
+    cmdline: loglevel=4 ro root=/dev/ram0
+CONF
+
+xorriso -as mkisofs \
+    -R -r -J \
+    -b boot/limine-bios-cd.bin \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    --efi-boot boot/limine-uefi-cd.bin \
+    -efi-boot-part --efi-boot-image --protective-msdos-label \
+    "$STAGING" -o "$ISO"
+"$LIMINE_CLI" bios-install "$ISO"
+
+(
+    cd "$OUTPUT_DIR"
+    sha256sum "$(basename "$ISO")" > "$(basename "$ISO").sha256"
+)
+printf 'ISO created: %s\n' "$ISO"
+printf 'Checksum: %s\n' "$ISO.sha256"
