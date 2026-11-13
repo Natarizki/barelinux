@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">BareLinux logo</title>
+  <desc id="desc">BareLinux wordmark with a white X inside a black square.</desc>
+  <rect width="1200" height="300" fill="#ffffff"/>
+  <g fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="154" font-weight="700" letter-spacing="-7">
+    <text x="54" y="181">BareLinux</text>
+  </g>
+  <rect x="922" y="63" width="214" height="154" rx="20" fill="#000000"/>
+  <path d="M972 101 L1010 101 L1029 126 L1048 101 L1086 101 L1048 140 L1086 179 L1048 179 L1029 154 L1010 179 L972 179 L1010 140 Z" fill="#ffffff"/>
+  <text x="600" y="258" text-anchor="middle" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="25" letter-spacing="5">MINIMAL BY DEFAULT. MODULAR BY DESIGN.</text>
+</svg>
