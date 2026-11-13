@@ -1,0 +1,10 @@
+# BareLinux source baseline
+# Format: package<TAB>version<TAB>archive_url
+# Versions are pinned to the official Multilib Linux From Scratch 13.1 book.
+# SHA-256 verification data must be imported from the official MLFS checksum
+# manifest before any source archive is downloaded or built.
+binutils	2.47	https://sourceware.org/pub/binutils/releases/binutils-2.47.tar.xz
+gcc	16.2.0	https://ftp.gnu.org/gnu/gcc/gcc-16.2.0/gcc-16.2.0.tar.xz
+glibc	2.44	https://ftp.gnu.org/gnu/glibc/glibc-2.44.tar.xz
+linux	7.1.8	https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.8.tar.xz
+systemd	261.2	https://github.com/systemd/systemd/archive/refs/tags/v261.2.tar.gz
