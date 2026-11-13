@@ -33,6 +33,11 @@ jobs:
           bash -n scripts/check-kernel-config.sh
           bash -n scripts/test-kernel-config.sh
           bash -n scripts/test-iso-boot.sh
+          bash -n bin/lfs
+          bash -n scripts/test-blf-workspace.sh
+
+      - name: Test BareLinux Factory workspace CLI
+        run: bash scripts/test-blf-workspace.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
