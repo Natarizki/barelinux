@@ -4,8 +4,8 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKSPACE_ARG="${1:-}"
 LFS_HOME_ARCHIVE="${LFS_HOME_ARCHIVE:-}"
-fail() { printf 'ERROR: %s\\n' "$*" >&2; exit 1; }
-log() { printf '[barelinux-full-mlfs] %s\\n' "$*" >&2; }
+fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+log() { printf '[barelinux-full-mlfs] %s\n' "$*" >&2; }
 
 [[ -n "$WORKSPACE_ARG" ]] || fail "usage: build-mlfs-full-alfs.sh WORKSPACE"
 [[ "$(id -u)" -ne 0 ]] || fail "refusing to run the build as root"
@@ -123,14 +123,14 @@ for path in \
 done
 [[ -x "$TARGET/usr/bin/bash" && -x "$TARGET/usr/bin/gcc" && -x "$TARGET/usr/bin/systemctl" ]] || fail "core MLFS executables are not executable"
 
-find "$TARGET" -xdev -type f -printf '%P\\n' | LC_ALL=C sort > "$STAGE/installed-file-inventory.txt"
+find "$TARGET" -xdev -type f -printf '%P\n' | LC_ALL=C sort > "$STAGE/installed-file-inventory.txt"
 INVENTORY_SHA="$(sha256sum "$STAGE/installed-file-inventory.txt" | awk '{print $1}')"
 {
-  printf 'artifact_schema=1\\nstage=mlfs-full-book\\nstatus=success\\n'
-  printf 'mlfs_commit=%s\\njhalfs_commit=%s\\n' "$MLFS_COMMIT" "$JHALFS_COMMIT"
-  printf 'target=x86_64-lfs-linux-gnu\\nmultilib_profile=ml_32\\ninit_system=systemd\\n'
-  printf 'installed_file_inventory_sha256=%s\\n' "$INVENTORY_SHA"
-  printf 'completed_utc=%s\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'artifact_schema=1\nstage=mlfs-full-book\nstatus=success\n'
+  printf 'mlfs_commit=%s\njhalfs_commit=%s\n' "$MLFS_COMMIT" "$JHALFS_COMMIT"
+  printf 'target=x86_64-lfs-linux-gnu\nmultilib_profile=ml_32\ninit_system=systemd\n'
+  printf 'installed_file_inventory_sha256=%s\n' "$INVENTORY_SHA"
+  printf 'completed_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "$STAGE/MLFS-BASE-SUCCESS"
 
 log "PASS: full MLFS book completed through jhalfs and required root filesystem checks passed"
