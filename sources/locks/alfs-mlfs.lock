@@ -1,0 +1,14 @@
+# BareLinux ALFS + raw MLFS source inputs
+# jhalfs commit is pinned to a read-only mirror of the official ALFS source.
+# MLFS multilib is a moving upstream branch; the audit workflow records the
+# resolved commit. Do not use that moving head for package builds until the
+# reviewed commit is copied into this lock as MLFS_COMMIT.
+
+MLFS_REPOSITORY=https://git.linuxfromscratch.org/lfs.git
+MLFS_REF=multilib
+MLFS_COMMIT=UNPINNED
+
+JHALFS_REPOSITORY=https://git.linuxfromscratch.org/jhalfs.git
+JHALFS_MIRROR=https://github.com/lfs-book/jhalfs.git
+JHALFS_COMMIT=a13fd9828b8c28d02dfde824a441cd7dd3a1643d
+JHALFS_MIRROR_COMMIT_URL=https://github.com/lfs-book/jhalfs/commit/a13fd9828b8c28d02dfde824a441cd7dd3a1643d
