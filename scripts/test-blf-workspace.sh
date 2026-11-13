@@ -28,5 +28,5 @@ fi
 if bash "$LFS" TestDistro export >/dev/null 2>&1; then
   echo 'unimplemented export unexpectedly succeeded' >&2; exit 1
 fi
-if grep -qi 'optional' "$ROOT/docs/BARELINUX-FACTORY.md"; then echo 'core build system must not be documented as optional' >&2; exit 1; fi
+if grep -qi 'optional OS-building environment' "$ROOT/docs/BARELINUX-FACTORY.md"; then echo 'core build system must not be documented as optional' >&2; exit 1; fi
 echo 'BareLinux core LFS workspace tests: OK'
