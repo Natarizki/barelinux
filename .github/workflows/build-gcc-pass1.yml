@@ -72,6 +72,7 @@ jobs:
           LFS_UID="$(awk -F= '$1=="lfs_uid" {print $2}' "$MARKER")"
           LFS_GID="$(awk -F= '$1=="lfs_gid" {print $2}' "$MARKER")"
           [[ "$LFS_UID" =~ ^[0-9]+$ && "$LFS_GID" =~ ^[0-9]+$ ]]
+          grep -Fxq 'artifact_schema=2' "$MARKER"
           grep -Fxq 'stage=binutils-pass1' "$MARKER"
           grep -Fxq 'status=success' "$MARKER"
           MLFS_COMMIT="$(awk -F= '$1=="MLFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
