@@ -1,6 +1,6 @@
 # BareLinux Raw MLFS + ALFS Package Pipeline
 
-**Status:** Raw MLFS 13.1 and pinned jhalfs pass CI. The source gate now runs the real `jhalfs run` configuration path and generates jhalfs' own Makefile and dependency graph from the local raw book, using the `systemd` and `ml_32` (x86_64 + i686) profile. The Binutils Pass 1 checkpoint has now executed through jhalfs' generated Makefile (`BREAKPOINT=501-binutils-pass1`), passed linker/assembler validation, and published a resumable build-root artifact including the LFS build user's host state. A continuous full-book workflow (`.github/workflows/build-mlfs-full.yml`) has been added. It restores the verified Binutils checkpoint and runs the complete generated jhalfs Makefile without a `BREAKPOINT`, with a six-hour runner limit and a validated full-base artifact gate. The first full-book attempt restored the verified checkpoint and reached `502-gcc-pass1`, then failed because the jhalfs LFS-user/root privilege transition was not configured for the ephemeral runner. The runner has since been updated with a temporary sudoers policy that is validated and removed on exit; the fresh Binutils checkpoint has since succeeded and automatically triggered the full-book retry; runner preparation is currently in progress. No complete base system or ISO has been produced yet.
+**Status:** Raw MLFS 13.1 and pinned jhalfs pass CI. The source gate generates jhalfs' own Makefile and dependency graph from the local raw book using the `systemd` and `ml_32` (x86_64 + i686) profile. Binutils Pass 1 has executed through jhalfs' generated Makefile, passed linker/assembler validation, and published a resumable build-root artifact. The first full-book attempts reached `502-gcc-pass1` but failed because `gcc-16.2.0.tar.xz` was missing from the build root's `sources/` directory. Inspection of the uploaded failure artifact confirmed this was a source-staging failure, not a GCC compilation failure. The source gate now enables jhalfs' built-in package retrieval, and the full-book runner verifies the complete source URL inventory and book-provided MD5 checks before running the Makefile. The fix is committed and awaiting a fresh end-to-end CI run; no complete MLFS base system or ISO has been produced yet.
 
 ## Goal
 
@@ -29,7 +29,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
    - Run jhalfs against the raw MLFS tree through the BareLinux adapter.
    - Audit generated recipes and dependency graph for expected multilib branches and package order.
    - Fail closed on unsupported XML/XSLT constructs or any fallback to vanilla LFS.
-   - **Current result:** CI generated 131 command scripts; 35 generated scripts contain recognizable multilib instructions.
+   - **Current result:** CI generated 131 command scripts; 35 generated scripts contain recognizable multilib instructions. jhalfs' source retrieval is now enabled in the build configuration; the full-book runner has a preflight for missing source files and the generated MD5SUMS inventory.
 
 2. **Source and policy gate**
    - Reconcile the package inventory against the complete MLFS 13.1 book and BareLinux profile.
@@ -102,7 +102,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - Only Binutils SHA-256 is independently pinned in the initial toolchain manifest; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Binutils Pass 1 has passed its jhalfs Makefile target, installed linker/assembler checks, and build-root artifact upload (`.github/workflows/build-binutils-pass1.yml`). The automatic continuation now uses `.github/workflows/build-mlfs-full.yml` to execute the complete jhalfs Makefile in one job. The standalone GCC checkpoint workflow is manual-only for debugging.
+- Binutils Pass 1 has passed its jhalfs Makefile target, installed linker/assembler checks, and build-root artifact upload (`.github/workflows/build-binutils-pass1.yml`). The automatic continuation uses `.github/workflows/build-mlfs-full.yml` to execute the complete jhalfs Makefile in one job. The standalone GCC checkpoint workflow is manual-only for debugging. The latest full-book failure was traced to the absent GCC source archive; jhalfs source retrieval and an explicit archive/checksum preflight have now been enabled, pending CI verification.
 - Secure build isolation, remaining package recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
