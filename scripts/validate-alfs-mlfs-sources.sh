@@ -182,6 +182,7 @@ grep -RIl -E -- '-m32|/usr/lib32|lib32|32-bit' "$JHALFS_BUILD_DIR/lfs-commands" 
 [[ -s "$AUDIT/generated-multilib-command-files.txt" ]] || fail "jhalfs-generated scripts contain no recognizable i686 multilib commands"
 cp "$JHALFS_BUILD_DIR/prbook.xml" "$AUDIT/prbook.xml"
 cp "$JHALFS_BUILD_DIR/Makefile" "$AUDIT/jhalfs-Makefile"
+find "$JHALFS_DIR" -type f -print | sort > "$AUDIT/jhalfs-file-inventory.txt"
 
 log "Archiving generated command scripts for semantic review"
 tar -C "$JHALFS_BUILD_DIR" -cJf "$AUDIT/generated-commands.tar.xz" lfs-commands
