@@ -110,7 +110,16 @@ sudo mount --bind "$TARGET" "$MOUNTPOINT"
 cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
 trap cleanup_build_mount EXIT
 grep -Fq '501-binutils-pass1:' "$MOUNTPOINT/jhalfs/Makefile" || fail "jhalfs Makefile lacks the Binutils Pass 1 target"
+set +e
 script -q -e -c "stty rows 24 cols 80; make -C '$MOUNTPOINT/jhalfs' BREAKPOINT=501-binutils-pass1" /dev/null 2>&1 | tee "$STAGE/build.log"
+BUILD_STATUS="${PIPESTATUS[0]}"
+set -e
+[[ -e "$MOUNTPOINT/jhalfs/501-binutils-pass1" ]] || fail "jhalfs did not complete 501-binutils-pass1"
+if (( BUILD_STATUS != 0 )); then
+  sed -E 's/\\x1B\\[[0-9;]*[[:alpha:]]//g' "$STAGE/build.log" > "$STAGE/build-clean.log"
+  grep -Fq "The build has been stopped at 501-binutils-pass1 as requested" "$STAGE/build-clean.log" || fail "jhalfs Makefile failed before its requested 501-binutils-pass1 checkpoint (exit $BUILD_STATUS)"
+  log "jhalfs reached the requested 501-binutils-pass1 breakpoint; its documented stop status is accepted"
+fi
 cleanup_build_mount
 trap - EXIT
 
