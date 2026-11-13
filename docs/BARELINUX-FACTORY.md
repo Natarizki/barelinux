@@ -1,46 +1,38 @@
-# BareLinux Factory (BLF)
+# BareLinux Core LFS Build System
 
-**Status:** Workspace CLI milestone implemented; LFS build engine and bootable ISO export are not implemented.
+**Status:** Core architecture decision approved. Workspace CLI is implemented; the real MLFS build engine and bootable ISO exporter are under development.
 
-BareLinux Factory is the official, optional OS-building environment for creating independent Linux distributions from a BareLinux host. It uses a Linux From Scratch (LFS)-based build process and produces a standalone target root filesystem and, when the selected profile supports it, a bootable ISO image.
+BareLinux is built from source using **Multilib Linux From Scratch (MLFS) 13.1**. The source-build system is a mandatory part of BareLinux's engineering architecture, not an optional add-on. The resulting installed BareLinux system does not need to run the factory continuously; the build capability is core to the project and its official build pipeline.
 
-## Product decision
+## Non-negotiable product decision
 
-BLF is part of the official BareLinux project and roadmap, but it is not a mandatory component of the minimal BareLinux installation.
+- **Mandatory build foundation:** BareLinux's official system build follows MLFS 13.1, adapted and documented for BareLinux.
+- **Real source compilation:** the build engine must compile verified upstream sources in the prescribed dependency order. It must not substitute host binaries or fabricate success markers.
+- **Reproducibility:** every source, patch, build option, toolchain, and output must be recorded and integrity-checked.
+- **Isolation:** builds must run in a dedicated, controlled environment and must never write into the running host's system directories.
+- **Independent output:** a successful export must produce a standalone target root filesystem and validated bootable ISO.
+- **CLI-first:** the complete workflow is terminal-driven; no GUI is required.
 
-- **Official:** maintained, versioned, documented, and tested by the BareLinux project.
-- **Optional:** users may omit it from an installation and install/enable it when needed.
-- **Isolated:** builds run in dedicated workspaces and must not modify the running host system.
-- **CLI-first:** the complete workflow is available from the terminal; no GUI is required.
-- **Independent output:** exported distributions must not depend on the BareLinux host to boot or operate, unless a profile explicitly documents such a dependency.
+## User-facing workflow
 
-“Optional core” means optional to install, not unofficial or third-party.
-
-## User-facing command concept
-
-The initial workspace command interface is implemented in `bin/lfs`. The build and export commands are deliberately fail-closed until their engines exist:
+The workspace CLI currently supports project creation, profile validation, status, and a factory shell:
 
 ```sh
-lfs enter
 lfs init MyDistro
 lfs MyDistro configure
+lfs enter MyDistro
 lfs MyDistro build
 lfs MyDistro export
 ```
 
-- `lfs enter` enters the BLF build environment.
-- `lfs init <name>` creates a new distro project and isolated workspace.
-- `lfs <name> configure` validates and edits the distro profile.
-- `lfs <name> build` builds the selected toolchain, base system, kernel, and boot components.
-- `lfs <name> export` packages verified build outputs into the selected deliverables.
-
-The CLI syntax may evolve during implementation. Commands must fail clearly when prerequisites, source verification, or required build stages are incomplete.
+The CLI is not yet the complete build system. At present, `lfs enter` opens a workspace shell and is **not** a chroot or security boundary. `build` and `export` fail closed until their real engines and acceptance tests are implemented.
 
 ## Distro profile
 
-Each distro project must define at least:
+Each project profile is declarative and must define at least:
 
 - distro name, identifier, version, and release metadata;
+- `BUILD_SYSTEM=mlfs` (mandatory);
 - target architecture and CPU baseline;
 - libc and toolchain choices;
 - kernel source, configuration, and required drivers;
@@ -51,54 +43,61 @@ Each distro project must define at least:
 - image format and export targets;
 - license and source-attribution metadata.
 
-Profiles must be declarative, versioned, and validated before building. User-supplied names and configuration values must never be interpolated into shell commands unsafely.
+Profiles are parsed as data, never sourced as shell code. Unknown or unsupported values must be rejected before build execution.
 
-## Build architecture
+## Real build architecture
 
-1. **Factory environment:** reproducible, isolated toolchain/build environment.
-2. **Source manager:** pinned source versions, verified cryptographic digests, license records, and patch provenance.
-3. **Toolchain stage:** cross-toolchain and target build tools, following the selected LFS build plan.
-4. **System stage:** target libraries, utilities, init system, kernel, and selected packages.
-5. **Image stage:** initramfs, bootloader configuration, root filesystem image, and ISO assembly.
-6. **Validation stage:** structural checks, boot tests, and export manifest generation.
+1. **Build host validation:** verify Linux host requirements, PTY, compilers, multilib execution, disk, memory, and required utilities.
+2. **Isolation backend:** provision a controlled build root with explicit mount, namespace, ownership, and cleanup boundaries. If isolation is unavailable, stop.
+3. **Source lock manager:** use the complete MLFS 13.1 archive and patch lockfile; verify SHA-256/signatures before extraction.
+4. **Cross-toolchain:** build Binutils, GCC, Linux API headers, glibc, and libstdc++ in the exact MLFS order, including x86_64/i686 multilib requirements.
+5. **Temporary tools:** compile the MLFS temporary toolchain stages.
+6. **Target system:** enter the isolated target root and compile the final base system in dependency order.
+7. **BareLinux integration:** apply the approved kernel/configuration, systemd, Limine, immutable filesystem layout, and BareLinux policies.
+8. **Image assembly:** generate initramfs, root filesystem image, and BIOS/UEFI ISO.
+9. **Validation:** run structural checks and virtual firmware boot tests before export is accepted.
 
-Build stages must be resumable where safe and must record their inputs, outputs, logs, and checksums. Unverified source archives must not be built.
+Every stage must record its inputs, outputs, logs, and checksums. Safe stages should be resumable; failed stages must not be marked complete.
 
-## Isolation and safety requirements
+## Source integrity gate
 
-- Never build directly into the running host's `/`, `/usr`, or `/etc`.
-- Use a per-project workspace with explicit ownership and cleanup boundaries.
-- Do not run arbitrary project scripts as host root.
-- Use controlled namespaces, containers, or another documented isolation mechanism; detect unavailable isolation features and fail closed.
+The current source manifest contains five initial toolchain entries, but four SHA-256 values are still unverified. The package inventory is not a complete source lockfile. Therefore source fetching and compilation must remain blocked until every required archive and patch has an independently verified integrity value. Do not invent checksums or copy a digest from a different archive format.
+
+## Isolation and safety
+
+- Never build into the running host's `/`, `/usr`, or `/etc`.
+- Never execute project-controlled scripts as host root.
 - Validate archive paths and symlinks before extraction.
-- Keep credentials and signing keys out of build logs and exported artifacts.
-- Require explicit confirmation before destructive cleanup or overwriting an existing export.
+- Keep signing keys and credentials out of logs and artifacts.
+- Require explicit confirmation before destructive cleanup or overwriting exports.
+- Treat `lfs enter` as an ordinary workspace shell until the isolation backend is implemented; never describe it as a secure chroot before then.
 
-## Export and acceptance criteria
+## Export acceptance criteria
 
-An export is not considered successful merely because an ISO file exists. A release candidate must include:
-
+A successful export must contain:
 - standalone root filesystem and boot artifacts;
-- ISO image and SHA-256 checksum;
-- distro profile and build manifest;
+- bootable ISO and SHA-256 checksum;
+- exact distro profile and build manifest;
 - source/version/license inventory;
 - build logs and validation report;
-- successful boot tests for every boot mode the profile claims to support.
+- successful BIOS and/or UEFI boot tests for every mode claimed by the profile.
 
-A claimed bootable ISO must be tested in virtual firmware (BIOS and/or UEFI as declared by the profile) and checked for reaching the expected system target. Hardware testing is recommended before calling a release production-ready.
+An ISO file existing on disk is not proof that it boots.
 
-## Relationship to BareLinux
+## Current implementation status
 
-BLF is a separate optional subsystem. Its installation, removal, or build failure must not prevent the normal BareLinux host from booting. It may reuse BareLinux tooling and policies, but exported distributions are separate products with their own profiles, versions, validation results, and release artifacts.
+Implemented:
+- workspace CLI: `lfs init`, `lfs enter`, `lfs doctor`, project status, and profile editing;
+- profile validation requiring the MLFS build-system declaration;
+- Makefile install/uninstall/test targets;
+- CI coverage for the workspace CLI.
 
-## Implementation roadmap
+Not yet implemented:
+- secure build isolation / real chroot environment;
+- complete verified source and patch lockfile;
+- MLFS cross-toolchain and multilib compilation stages;
+- temporary-tools and final-system build recipes;
+- kernel, initramfs, Limine integration through the factory;
+- real ISO export and BIOS/UEFI boot validation.
 
-1. **Workspace CLI:** project creation, profile validation, status, and factory shell (`bin/lfs`).
-2. Harden workspace isolation and define the supported build sandbox.
-3. Implement source locking, verification, and reproducible toolchain stages.
-4. Implement base-system build stages and resumable state tracking.
-5. Implement kernel, initramfs, and bootloader integration.
-6. Implement ISO export and BIOS/UEFI boot validation.
-7. Add example distro profiles and end-to-end CI tests.
-
-**Current limitation:** the workspace CLI is implemented, but `lfs enter` currently opens a factory shell in the selected workspace; it is not a chroot or security boundary. `build` and `export` intentionally return an error until a real, isolated LFS build engine and tested ISO pipeline are available. No distro can currently be built or exported with BLF.
+**No distro can currently be fully built or exported.** The next engineering milestones are the isolation backend and complete source lock, followed by the first actual MLFS cross-toolchain build. The CI must never call the project buildable until that pipeline has passed end-to-end tests.
