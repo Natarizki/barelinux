@@ -4,7 +4,7 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKSPACE_ARG="${1:-}"
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-log() { printf '[gcc-pass1-alfs] %s\n' "$*"; }
+log() { printf '[gcc-pass1-alfs] %s\n' "$*" >&2; }
 
 [[ -n "$WORKSPACE_ARG" ]] || fail "usage: build-gcc-pass1-alfs.sh WORKSPACE"
 [[ "$(id -u)" -ne 0 ]] || fail "refusing to build as root"
@@ -58,17 +58,17 @@ download_locked() {
     sha512) [[ "$digest" =~ ^[0-9a-f]{128}$ ]] || fail "$package SHA-512 lock is invalid";;
     *) fail "unsupported digest algorithm for $package: $algorithm";;
   esac
-  if [[ -f "$archive" ]] && ! printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c --status; then
+  if [[ -f "$archive" ]] && ! printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c - >&2-status; then
     rm -f "$archive"
   fi
   if [[ ! -f "$archive" ]]; then
     rm -f "$part"
     log "Downloading pinned $package $version source"
     curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --output "$part" "$url"
-    printf '%s  %s\n' "$digest" "$part" | "${algorithm}sum" -c -
+    printf '%s  %s\n' "$digest" "$part" | "${algorithm}sum" -c - >&2
     mv "$part" "$archive"
   fi
-  printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c -
+  printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c - >&2
   printf '%s\n' "$archive"
 }
 
