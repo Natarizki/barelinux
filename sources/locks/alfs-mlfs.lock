@@ -6,7 +6,7 @@
 
 MLFS_REPOSITORY=https://git.linuxfromscratch.org/lfs.git
 MLFS_REF=multilib
-MLFS_COMMIT=UNPINNED
+MLFS_COMMIT=3d65852c3f2506a7bd1a0e052d43a5a3499a079f
 
 JHALFS_REPOSITORY=https://git.linuxfromscratch.org/jhalfs.git
 JHALFS_MIRROR=https://github.com/lfs-book/jhalfs.git
