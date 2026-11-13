@@ -9,7 +9,7 @@
 - **Automation:** official ALFS implementation, jhalfs, from `https://git.linuxfromscratch.org/jhalfs.git`.
 - **Book release reference:** [MLFS 13.1 stable book](https://rivendell.linuxfromscratch.org/mlfs/view/stable/index.html).
 
-The upstream MLFS download instructions currently describe the `multilib` branch as the source checkout. That branch is a moving development reference, so BareLinux must resolve and record an exact Git commit before building. A version label alone is not a reproducible source lock.
+The upstream MLFS download instructions describe the `multilib` branch as the source checkout. BareLinux resolved and pinned MLFS 13.1 to commit `3d65852c3f2506a7bd1a0e052d43a5a3499a079f` (commit date 2026-10-26). The jhalfs source is pinned to `a13fd9828b8c28d02dfde824a441cd7dd3a1643d`.
 
 ## Required adapter boundary
 
@@ -56,7 +56,7 @@ The ALFS–MLFS integration is not considered complete until CI demonstrates all
 - a representative early-stage package can be built through the generated recipe and validated;
 - a deliberately unsupported or altered book input fails closed.
 
-Until those gates pass, the existing Binutils Pass 1 workflow remains the only proven package build. It must not be described as proof that the full ALFS–MLFS integration works.
+The XSLT-generation gate has passed. The Binutils Pass 1 workflow is now configured to execute the generated ALFS recipe; only after that package workflow passes can the first ALFS-driven package build be considered proven. Full Makefile orchestration and all remaining package workflows are still outstanding.
 
 
 ## Confirmed jhalfs adapter surface
@@ -69,6 +69,6 @@ The pinned jhalfs revision exposes the required integration points in its own so
 
 This is a reason to prefer the local-copy adapter: it prevents jhalfs from fetching a different LFS book or silently substituting a vanilla LFS branch.
 
-The new source-audit workflow performs the first actual compatibility check: it fetches raw MLFS and the pinned jhalfs source, profiles the MLFS XML as systemd, and runs jhalfs's own LFS extraction XSLT against that profiled book. It then inventories the generated command scripts and checks for multilib-related commands.
+The source-audit workflow (run [#2](https://github.com/Natarizki/barelinux/actions/runs/43408490505)) performs the compatibility check: it fetches pinned raw MLFS and jhalfs sources, profiles the MLFS XML as systemd, and runs jhalfs's own LFS extraction XSLT against that profiled book. CI successfully generated **131 package command scripts**, and 35 generated scripts contain recognizable multilib instructions. The artifact preserves the generated command tree for review.
 
 Passing this XSLT test proves only that recipe generation works structurally. It does **not** prove that every generated command is semantically correct, that jhalfs' full Makefile orchestration is safe for BareLinux, or that any package has been compiled. Generated scripts still require review and package-level build tests before they can enter the production pipeline.
