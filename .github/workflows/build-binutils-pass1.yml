@@ -26,7 +26,7 @@ jobs:
       - name: Install MLFS and ALFS host prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc docbook-xml docbook-xsl
+          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc libxml2-utils docbook-xml docbook-xsl
 
       - name: Validate build script syntax
         run: |
