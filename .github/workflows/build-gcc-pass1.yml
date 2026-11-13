@@ -1,10 +1,6 @@
 name: Build GCC Pass 1
 
 on:
-  workflow_run:
-    workflows: ["Build Binutils Pass 1"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       binutils_run_id:
@@ -18,7 +14,7 @@ permissions:
 
 jobs:
   gcc-pass1:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch'
     name: Build GCC Pass 1 from generated raw MLFS recipe
     runs-on: ubuntu-latest
     timeout-minutes: 90
