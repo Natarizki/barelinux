@@ -10,7 +10,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/bin/lfs"
 
 check:
-	bash -n bin/lfs scripts/test-blf-workspace.sh
+	bash -n bin/lfs scripts/build-binutils-pass1.sh scripts/test-blf-workspace.sh
 
 test: check
 	bash scripts/test-blf-workspace.sh
