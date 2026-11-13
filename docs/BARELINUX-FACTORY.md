@@ -84,6 +84,21 @@ A successful export must contain:
 
 An ISO file existing on disk is not proof that it boots.
 
+## First real build stage: Binutils Pass 1
+
+The repository now contains `scripts/build-binutils-pass1.sh`. It reads the pinned Binutils 2.47 URL and SHA-256, verifies the archive before extraction, checks archive paths and links, refuses root execution, requires a workspace owned by the build user, follows the MLFS 13.1 configure procedure, installs only under the workspace target's `rootfs/tools`, validates the cross-linker and assembler, and records success only after validation.
+
+Run the first stage with:
+
+```sh
+lfs init MyDistro
+lfs MyDistro build binutils-pass1
+```
+
+The GitHub Actions workflow `.github/workflows/build-mlfs-toolchain.yml` performs the same real compilation on a hosted x86_64 runner and uploads the tool prefix. This is one bootstrap stage, **not** a complete LFS build or bootable distro. GCC Pass 1 is the next dependency stage.
+
+The build follows the MLFS 13.1 procedure and target tuple `x86_64-lfs-linux-gnu`; see the official [Binutils Pass 1 chapter](https://www.linuxfromscratch.org/mlfs/view/13.1-rc1/chapter05/binutils-pass1.html) and [environment setup](https://www.linuxfromscratch.org/mlfs/view/13.1-rc1/chapter04/settingenvironment.html).
+
 ## Current implementation status
 
 Implemented:
