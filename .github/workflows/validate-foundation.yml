@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate configuration and source manifest
+    name: Validate configuration and source integrity gate
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -22,9 +22,10 @@ jobs:
         run: |
           bash -n scripts/check-config.sh
           bash -n scripts/check-sources.sh
+          bash -n scripts/fetch-sources.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
 
-      - name: Validate pinned source versions
+      - name: Validate pinned source versions and integrity gate
         run: bash scripts/check-sources.sh
