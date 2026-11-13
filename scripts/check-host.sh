@@ -21,7 +21,7 @@ if [[ "$(uname -s)" != Linux ]]; then
 fi
 
 kernel="$(uname -r | grep -oE '^[0-9]+(\.[0-9]+)+' || true)"
-if [[ -z "$kernel" ]] || ! printf '%s\\n' 5.4 "$kernel" | sort -V -C; then
+if [[ -z "$kernel" ]] || ! printf '%s\n' 5.4 "$kernel" | sort -V -C; then
     printf 'ERROR: host kernel must be Linux 5.4 or newer (found: %s)\n' "${kernel:-unknown}" >&2
     failures=1
 else
