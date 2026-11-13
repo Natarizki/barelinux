@@ -18,15 +18,17 @@ The source manifest records versions and upstream archive locations. A source is
 ## Cross-toolchain policy
 
 - Build host and target system are separate.
-- The initial host is GitHub Actions `ubuntu-latest`; it is not a BareLinux target.
+- The outer host is GitHub Actions `ubuntu-latest`; MLFS host checks run inside an ephemeral Arch Linux container, not on the user's phone.
 - Primary ABI: x86_64.
 - Secondary ABI: i686.
 - Full multilib is mandatory; a 64-bit-only compiler is not an acceptable milestone.
 - Toolchain triplets, compiler flags, library directories, and bootstrap order must follow MLFS 13.1 rather than locally invented values.
 - Sysroot and cross-tools live under the ignored `work/` directory.
+- Host prerequisite validation checks development commands, GNU tool aliases, a working C++ compiler, the Linux kernel baseline, and UNIX 98 PTY availability.
+- The container image currently uses the mutable `archlinux:latest` tag; reproducible builds still require pinning its digest and locking its package snapshot.
 - The build must fail closed if required source digests are absent.
 
-The policy is recorded in `config/toolchain.conf` and checked by `scripts/check-toolchain.sh`. These checks do not claim that a compiler or sysroot exists.
+The policy is recorded in `config/toolchain.conf` and checked by `scripts/check-toolchain.sh`. Host prerequisites are checked by `scripts/check-host.sh` inside the CI container. These checks do not claim that a compiler or sysroot exists.
 
 ## M1 sequence
 
