@@ -1,6 +1,6 @@
 # BareLinux Raw MLFS + ALFS Package Pipeline
 
-**Status:** Raw-book integration and jhalfs XSLT generation pass CI. 131 package command scripts were generated from pinned raw MLFS 13.1. Binutils Pass 1 has successfully executed its generated ALFS recipe and published a verified tool-prefix artifact. A separate GCC Pass 1 workflow and pinned source manifest are now added; its first execution is pending.
+**Status:** Raw MLFS 13.1 and pinned jhalfs pass CI. The source gate now runs the real `jhalfs run` configuration path and generates jhalfs' own Makefile and dependency graph from the local raw book, using the `systemd` and `ml_32` (x86_64 + i686) profile. Package-stage workflows are being switched to execute Makefile checkpoints with `BREAKPOINT`, rather than directly invoking extracted scripts. The first fully orchestrated Binutils Pass 1 run is pending CI confirmation. No complete base system or ISO has been produced yet.
 
 ## Goal
 
@@ -98,11 +98,11 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 
 ## Current blockers
 
-- Full jhalfs Makefile orchestration and generated-command semantic review are still pending.
+- Full MLFS book execution and generated-command semantic review are still pending; the first package checkpoint is being validated through jhalfs Makefile execution.
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - Only Binutils SHA-256 is independently pinned in the initial toolchain manifest; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Binutils Pass 1 now executes and passes its ALFS-generated recipe (`.github/workflows/build-binutils-pass1.yml`). GCC Pass 1 has its own generated-recipe workflow (`.github/workflows/build-gcc-pass1.yml`) and is awaiting its first successful build.
+- Binutils Pass 1 and GCC Pass 1 are separate jhalfs Makefile checkpoint workflows (`.github/workflows/build-binutils-pass1.yml`, `.github/workflows/build-gcc-pass1.yml`). A checkpoint is not marked successful until the jhalfs Makefile target, installed toolchain checks, and artifact validation all pass.
 - Secure build isolation, remaining package recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
