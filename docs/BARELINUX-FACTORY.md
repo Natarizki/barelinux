@@ -1,6 +1,6 @@
 # BareLinux Core Build System
 
-**Status:** Core architecture decision approved. Workspace CLI is implemented; the ALFS–raw MLFS adapter, complete build engine, and bootable ISO exporter are under development.
+**Status:** Workspace CLI is implemented. Raw MLFS 13.1 and jhalfs are pinned; jhalfs has successfully generated the MLFS package command scripts. The first package workflow is being migrated to execute the generated ALFS recipe. The complete build engine and bootable ISO exporter remain under development.
 
 BareLinux is built from source using **raw Multilib Linux From Scratch (MLFS) 13.1**. **ALFS/jhalfs** is the automation engine. The official MLFS book remains the authority for package instructions and multilib procedures; BareLinux's adapter connects that raw book to jhalfs without silently converting it to vanilla LFS. This build system is mandatory to BareLinux's engineering architecture.
 
@@ -52,7 +52,7 @@ Profiles are parsed as data, never sourced as shell code. Unknown or unsupported
 
 ## Build architecture
 
-1. **Upstream lock:** fetch official raw MLFS source from the `multilib` branch, resolve and pin an exact commit matching MLFS 13.1, and pin the jhalfs revision. A moving branch name is not a reproducible lock.
+1. **Upstream lock:** fetch official raw MLFS source from the `multilib` branch at pinned commit `3d65852c3f2506a7bd1a0e052d43a5a3499a079f`, and pin jhalfs at `a13fd9828b8c28d02dfde824a441cd7dd3a1643d`. The branch name is retained as provenance; builds use the locked commit.
 2. **Adapter validation:** configure jhalfs against the raw MLFS tree; verify MLFS identity, architecture profiles, XML/XSLT handling, and multilib branches. Fail closed on unsupported constructs.
 3. **Recipe generation:** generate shell recipes and the dependency graph from the validated book. Audit generated output before execution.
 4. **Source lock:** pin every package archive and patch with independently verified integrity values.
@@ -92,7 +92,7 @@ An ISO file existing on disk is not proof that it boots.
 
 ## First real build stage: Binutils Pass 1
 
-The repository contains `scripts/build-binutils-pass1.sh` and a dedicated workflow, `.github/workflows/build-binutils-pass1.yml`. It reads the pinned Binutils 2.47 URL and SHA-256, verifies the archive before extraction, checks archive paths and links, refuses root execution, requires a workspace owned by the build user, follows the MLFS 13.1 configure procedure, installs only under the workspace target's `rootfs/tools`, validates the cross-linker and assembler, and records success only after validation.
+The repository contains `scripts/build-binutils-pass1-alfs.sh` and a dedicated workflow, `.github/workflows/build-binutils-pass1.yml`. It generates the package command from the pinned raw MLFS book using the pinned jhalfs XSLT, verifies the Binutils 2.47 source archive and SHA-256, checks archive paths and links, refuses root execution, requires a workspace owned by the build user, executes the generated MLFS command, installs under the workspace target's `tools` prefix, validates the cross-linker and assembler, and records success only after validation.
 
 Run the first stage with:
 
@@ -101,7 +101,7 @@ lfs init MyDistro
 lfs MyDistro build binutils-pass1
 ```
 
-This is one bootstrap stage, **not** a complete MLFS build or bootable distro. It predates the ALFS adapter integration and does not prove full jhalfs/MLFS compatibility. GCC Pass 1 is the next dependency stage after the integration and prerequisite gates are implemented.
+This is one bootstrap stage, **not** a complete MLFS build or bootable distro. The source-audit workflow has proven jhalfs XSLT generation against the pinned MLFS book; the package workflow now executes the generated Binutils Pass 1 recipe. GCC Pass 1 is the next dependency stage after the Binutils artifact is validated.
 
 ## Current implementation status
 
@@ -113,8 +113,8 @@ Implemented:
 - real Binutils Pass 1 compile/install/validation workflow.
 
 Not yet implemented:
-- pinned MLFS 13.1 raw Git commit and pinned jhalfs revision;
-- ALFS–MLFS adapter and generated-recipe compatibility tests;
+- complete jhalfs Makefile orchestration and generated-recipe semantic review;
+- successful execution of the ALFS-generated Binutils Pass 1 package workflow;
 - secure build isolation / real chroot environment;
 - complete verified source and patch lockfile;
 - remaining MLFS cross-toolchain and multilib compilation stages;
