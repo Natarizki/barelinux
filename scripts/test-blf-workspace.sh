@@ -22,9 +22,10 @@ bash "$LFS" TestDistro status | grep -q 'Profile: valid'
 if bash "$LFS" init '../escape' >/dev/null 2>&1; then
   echo 'unsafe project name was accepted' >&2; exit 1
 fi
-if bash "$LFS" TestDistro build >/dev/null 2>&1; then
-  echo 'unimplemented build unexpectedly succeeded' >&2; exit 1
+if bash "$LFS" TestDistro build unknown-stage >"$TMP/build.out" 2>&1; then
+  echo 'unsupported build stage was accepted' >&2; exit 1
 fi
+grep -q 'unsupported build stage' "$TMP/build.out"
 if bash "$LFS" TestDistro export >/dev/null 2>&1; then
   echo 'unimplemented export unexpectedly succeeded' >&2; exit 1
 fi
