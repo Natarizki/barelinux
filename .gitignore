@@ -1,6 +1,7 @@
 # Build output
 /output/
 /work/
+/sources/cache/
 /sources/downloads/
 /sources/extracted/
 /logs/
