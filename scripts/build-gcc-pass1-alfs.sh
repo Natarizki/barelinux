@@ -59,7 +59,7 @@ download_locked() {
     sha512) [[ "$digest" =~ ^[0-9a-f]{128}$ ]] || fail "$package SHA-512 lock is invalid";;
     *) fail "unsupported digest algorithm for $package: $algorithm";;
   esac
-  if [[ -f "$archive" ]] && ! printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c - >&2-status; then
+  if [[ -f "$archive" ]] && ! printf '%s  %s\n' "$digest" "$archive" | "${algorithm}sum" -c - >&2; then
     rm -f "$archive"
   fi
   if [[ ! -f "$archive" ]]; then
