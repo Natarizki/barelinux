@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BareLinux Factory command-line front end (workspace milestone).
+# BareLinux core LFS/MLFS build-system CLI (engine under active implementation).
 set -euo pipefail
 
 BLF_ROOT="${BLF_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/barelinux-factory}"
@@ -11,13 +11,13 @@ usage() {
 BareLinux Factory (BLF)
 
 Usage:
-  lfs enter [DISTRO]          Open a BLF workspace shell (not a chroot)
+  lfs enter [DISTRO]          Enter the distro build workspace (isolation not yet implemented)
   lfs init DISTRO             Create a distro project
-  lfs doctor                  Check build-host tools and resources
+  lfs doctor                  Check mandatory LFS build-host tools and resources
   lfs DISTRO status           Show project state
   lfs DISTRO configure        Open the distro profile in $EDITOR
-  lfs DISTRO build            Build the distro (build engine not yet available)
-  lfs DISTRO export           Export a bootable ISO (export engine not yet available)
+  lfs DISTRO build            Build the distro from verified MLFS/LFS sources
+  lfs DISTRO export           Export a validated bootable ISO
   lfs help
 
 Project names: 1-32 characters; start with a letter; then letters, digits,
@@ -50,17 +50,18 @@ validate_profile() {
     [[ "$value" != *$'\n'* && "$value" != *$'\r'* ]] || fail "invalid profile value"
     seen["$key"]=1
   done < "$file"
-  for key in DISTRO_NAME DISTRO_ID DISTRO_VERSION TARGET_ARCH; do
+  for key in DISTRO_NAME DISTRO_ID DISTRO_VERSION TARGET_ARCH BUILD_SYSTEM; do
     [[ -n "${seen[$key]+x}" ]] || fail "profile is missing $key"
   done
-  grep -Fxq 'TARGET_ARCH=x86_64' "$file" || fail "this BLF milestone supports TARGET_ARCH=x86_64 only"
+  grep -Fxq 'TARGET_ARCH=x86_64' "$file" || fail "this build currently supports TARGET_ARCH=x86_64 only"
+  grep -Fxq 'BUILD_SYSTEM=mlfs' "$file" || fail "BareLinux requires the MLFS source-build system"
 }
 [[ $# -ge 1 ]] || { usage; exit 2; }
 command="$1"; shift
 case "$command" in
   help|-h|--help) usage ;;
   doctor)
-    printf 'BareLinux Factory host preflight\\n'
+    printf 'BareLinux mandatory LFS/MLFS build preflight\\n'
     printf 'Host architecture: %s\\n' "$(uname -m)"
     printf 'Required target: x86_64\\n'
     [[ "$(uname -m)" == x86_64 ]] || printf 'WARNING: host is not x86_64; cross-build support is not implemented.\\n'
@@ -99,6 +100,7 @@ LIBC=glibc
 INIT_SYSTEM=systemd
 BOOTLOADER=limine
 FILESYSTEM=btrfs
+BUILD_SYSTEM=mlfs
 PROFILE_VERSION=1
 PROFILE
     mkdir -p "$dir"/{sources,build,rootfs,output,logs}
@@ -148,11 +150,11 @@ PROFILE
         ;;
       build)
         validate_profile "$dir/distro.conf"
-        fail "the LFS build engine is not implemented yet; refusing to create a fake build result"
+        fail "the real MLFS build pipeline is not ready yet; source lock verification, isolated toolchain stages, and build recipes must pass before compilation. No fake build result was created."
         ;;
       export)
         validate_profile "$dir/distro.conf"
-        fail "ISO export is not implemented yet; no bootable ISO was produced"
+        fail "ISO export is not ready: no validated MLFS rootfs and boot artifacts exist. No ISO was produced."
         ;;
       *) fail "unknown project action: $sub (run: lfs help)" ;;
     esac
