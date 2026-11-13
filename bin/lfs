@@ -155,9 +155,34 @@ PROFILE
         ;;
       build)
         validate_profile "$dir/distro.conf"
-        stage="${1:-binutils-pass1}"
-        [[ "$stage" == "binutils-pass1" ]] || fail "unsupported build stage: $stage (available: binutils-pass1)"
-        bash "$ROOT_DIR/scripts/build-binutils-pass1.sh" "$dir"
+        stage="${1:-plan}"
+        case "$stage" in
+          plan)
+            cat <<PLAN
+BareLinux MLFS 13.1 build plan for $name
+  1. binutils-pass1  - bootstrap cross-linker and assembler
+  2. gcc-pass1       - ALFS-generated MLFS cross compiler
+  3. linux-headers   - target Linux API headers
+  4. glibc           - target C library
+  5. temporary-tools - remaining MLFS temporary toolchain
+  6. full-book       - complete jhalfs-generated MLFS dependency graph
+  7. integrate       - BareLinux kernel, systemd policy, MPL/HSR, immutable layout
+  8. iso             - Limine BIOS/UEFI image and boot acceptance
+PLAN
+            printf '\nOnly binutils-pass1 and full-book have build entry points today. Later stages remain gated until their inputs and validators exist.\n'
+            ;;
+          binutils-pass1)
+            bash "$ROOT_DIR/scripts/build-binutils-pass1.sh" "$dir"
+            ;;
+          full-book)
+            build_root="${BLF_MLFS_BUILD_ROOT:-$dir/build/mlfs-13.1/alfs-root}"
+            home_archive="${LFS_HOME_ARCHIVE:-$dir/build/mlfs-13.1/lfs-home.tar.xz}"
+            [[ -d "$build_root/target/jhalfs" && -s "$build_root/target/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" ]] || fail "full-book requires the verified ALFS Binutils checkpoint unpacked at $build_root (expected target/jhalfs and target/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS)"
+            [[ -s "$home_archive" ]] || fail "full-book requires the matching lfs-home.tar.xz at $home_archive; set LFS_HOME_ARCHIVE to its path"
+            BLF_BUILD_JOBS="${BLF_BUILD_JOBS:-2}" LFS_HOME_ARCHIVE="$home_archive" bash "$ROOT_DIR/scripts/build-mlfs-full-alfs.sh" "$build_root"
+            ;;
+          *) fail "unsupported build stage: $stage (available: plan, binutils-pass1, full-book)" ;;
+        esac
         ;;
       export)
         validate_profile "$dir/distro.conf"
