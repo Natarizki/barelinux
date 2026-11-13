@@ -104,7 +104,7 @@ JOBS="${BLF_BUILD_JOBS:-2}"
 
 log "Executing Binutils Pass 1 through the generated jhalfs Makefile target"
 MOUNTPOINT="/mnt/barelinux-lfs"
-mkdir -p "$MOUNTPOINT"
+sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
 sudo mount --bind "$TARGET" "$MOUNTPOINT"
 cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
