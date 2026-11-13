@@ -110,6 +110,21 @@ sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
 sudo mount --bind "$TARGET" "$MOUNTPOINT"
 
+# jhalfs must have downloaded every raw-book source before execution.
+# Fail closed if any archive is missing or its book-provided MD5 validation fails.
+[[ -s "$SOURCES/urls.lst" ]] || fail "jhalfs source URL inventory is missing; regenerate the source gate with GETPKG=y"
+[[ ! -s "$SOURCES/MISSING_FILES.DMP" ]] || fail "jhalfs could not retrieve one or more MLFS sources; inspect $SOURCES/MISSING_FILES.DMP"
+[[ -s "$SOURCES/MD5SUMS" ]] || fail "jhalfs source checksum inventory is missing"
+(
+  cd "$SOURCES"
+  md5sum --check --status MD5SUMS || fail "one or more downloaded MLFS source archives failed the book-provided MD5 checks"
+  while read -r source_url source_md5 _; do
+    [[ -n "$source_url" ]] || continue
+    source_file="${source_url##*/}"
+    [[ -s "$source_file" ]] || fail "required MLFS source archive is missing: $source_file"
+  done < urls.lst
+)
+log "All raw MLFS chapter-3 source archives are present and pass jhalfs book checksum validation"
 log "Running the complete jhalfs-generated MLFS Makefile; no BREAKPOINT is set"
 log "This executes the dependency graph beyond GCC Pass 1 through the final MLFS book targets"
 set +e
