@@ -12,7 +12,7 @@
 
 These checks validate repository logic. They do not prove that MLFS has been compiled or that an ISO boots.
 
-## Current build execution\n\n- Binutils Pass 1 is built and validated through the generated jhalfs Makefile.\n- A continuous six-hour full-MLFS workflow now resumes from the verified Binutils artifact and runs the complete jhalfs Makefile. It is awaiting its first successful run.\n\n## Not built yet
+## Current build execution\n\n- Binutils Pass 1 is built and validated through the generated jhalfs Makefile.\n- A continuous six-hour full-MLFS workflow resumed from the verified Binutils artifact and reached the generated `502-gcc-pass1` target, but failed during jhalfs' LFS-user/root privilege transition. The runner now provisions a temporary, validated sudoers rule for the disposable `lfs` account and removes it on exit; a fresh Binutils checkpoint run is queued to retry the full book.\n\n## Not built yet
 
 - Complete, independently verified SHA-256 source lockfile for every required MLFS archive and patch
 - Complete MLFS cross-toolchain, temporary toolchain, and final userspace (full-book workflow pending)
