@@ -1,6 +1,6 @@
 # BareLinux Raw MLFS + ALFS Package Pipeline
 
-**Status:** Raw MLFS 13.1 and pinned jhalfs pass CI. The source gate now runs the real `jhalfs run` configuration path and generates jhalfs' own Makefile and dependency graph from the local raw book, using the `systemd` and `ml_32` (x86_64 + i686) profile. The Binutils Pass 1 checkpoint has now executed through jhalfs' generated Makefile (`BREAKPOINT=501-binutils-pass1`), passed linker/assembler validation, and published a resumable build-root artifact including the LFS build user's host state. GCC Pass 1 is wired as the next Makefile checkpoint (`BREAKPOINT=502-gcc-pass1`) and is awaiting a successful continuation run. No complete base system or ISO has been produced yet.
+**Status:** Raw MLFS 13.1 and pinned jhalfs pass CI. The source gate now runs the real `jhalfs run` configuration path and generates jhalfs' own Makefile and dependency graph from the local raw book, using the `systemd` and `ml_32` (x86_64 + i686) profile. The Binutils Pass 1 checkpoint has now executed through jhalfs' generated Makefile (`BREAKPOINT=501-binutils-pass1`), passed linker/assembler validation, and published a resumable build-root artifact including the LFS build user's host state. A continuous full-book workflow (`.github/workflows/build-mlfs-full.yml`) has been added. It restores the verified Binutils checkpoint and runs the complete generated jhalfs Makefile without a `BREAKPOINT`, with a six-hour runner limit and a validated full-base artifact gate. It has not yet completed. No complete base system or ISO has been produced yet.
 
 ## Goal
 
@@ -102,7 +102,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - Only Binutils SHA-256 is independently pinned in the initial toolchain manifest; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Binutils Pass 1 has passed its jhalfs Makefile target, installed linker/assembler checks, and build-root artifact upload (`.github/workflows/build-binutils-pass1.yml`). GCC Pass 1 is the next separate jhalfs Makefile checkpoint workflow (`.github/workflows/build-gcc-pass1.yml`) and has not yet passed.
+- Binutils Pass 1 has passed its jhalfs Makefile target, installed linker/assembler checks, and build-root artifact upload (`.github/workflows/build-binutils-pass1.yml`). The automatic continuation now uses `.github/workflows/build-mlfs-full.yml` to execute the complete jhalfs Makefile in one job. The standalone GCC checkpoint workflow is manual-only for debugging.
 - Secure build isolation, remaining package recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
