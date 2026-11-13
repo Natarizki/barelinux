@@ -42,7 +42,7 @@ TARGET="$WORKSPACE/target"
 SOURCES="$TARGET/sources"
 TOOLS="$TARGET/tools"
 STAGE="$TARGET/build/mlfs-13.1/binutils-pass1"
-RECIPE="$ALFS_WORK/audit/commands/chapter05/501-binutils-pass1"
+RECIPE="$ALFS_WORK/build/jhalfs/lfs-commands/chapter05/501-binutils-pass1"
 ARCHIVE="$SOURCES/${URL##*/}"
 
 [[ ! -e "$ALFS_WORK" && ! -e "$TARGET" ]] || fail "workspace already contains alfs/ or target/; use a fresh workspace"
