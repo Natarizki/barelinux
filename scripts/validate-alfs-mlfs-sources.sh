@@ -82,72 +82,102 @@ grep -q 'config[[:space:]]\+MULTILIB' "$JHALFS_DIR/Config.in" || fail "jhalfs ha
 grep -q 'if \[ -z "\$WORKING_COPY" \]' "$JHALFS_DIR/common/libs/func_book_parser" || fail "jhalfs local-copy branch not found"
 grep -q 'profile.arch' "$JHALFS_DIR/common/libs/func_book_parser" || fail "jhalfs profile transform invocation not found"
 
-log "Preparing generated-command directories"
-if [[ -f "$MLFS_DIR/process-scripts.sh" ]]; then
-  (cd "$MLFS_DIR" && bash process-scripts.sh)
-fi
-if [[ -f "$MLFS_DIR/git-version.sh" ]]; then
-  (cd "$MLFS_DIR" && bash git-version.sh systemd)
-fi
-mkdir -p "$AUDIT/commands"
-for chapter in "$MLFS_DIR"/chapter[0-9][0-9]; do
-  [[ -d "$chapter" ]] || continue
-  mkdir -p "$AUDIT/commands/${chapter##*/}"
-done
+log "Preparing a non-interactive jhalfs configuration for raw MLFS 13.1"
+BUILDDIR="$WORKSPACE/build"
+JHALFS_BUILD_DIR="$BUILDDIR/jhalfs"
+mkdir -p "$BUILDDIR"
+cat > "$JHALFS_DIR/configuration" <<EOF
+BOOK_LFS_ANY="y"
+BOOK_LFS_SYSD="y"
+INITSYS="systemd"
+WORKING_COPY="y"
+BOOK="$MLFS_DIR"
+COMMIT="$MLFS_COMMIT"
+LFS_MULTILIB_I686="y"
+MULTILIB="ml_32"
+BUILD_CHROOT="y"
+METHOD="chroot"
+BLFS_TOOL="n"
+CUSTOM_TOOLS="n"
+LUSER="lfs"
+LGROUP="lfs"
+LHOME="/home"
+BUILDDIR="$BUILDDIR"
+GETPKG="n"
+RUNMAKE="n"
+CLEAN="n"
+ALL_CORES="n"
+N_PARALLEL="2"
+REALSBU="n"
+CONFIG_TESTS="n"
+TEST="0"
+KEEPDIR="n"
+TEST_MISMATCH="n"
+PKGMNGT="n"
+WRAP_INSTALL="n"
+INSTALL_LOG="y"
+STRIP="n"
+NO_PROGRESS_BAR="y"
+HAVE_FSTAB="n"
+FSTAB=""
+CONFIG_BUILD_KERNEL="n"
+CONFIG=""
+NCURSES5="n"
+TIMEZONE="Etc/UTC"
+LANG="en_US.UTF-8"
+FULL_LOCALE="n"
+PAGE="letter"
+HOSTNAME="barelinux"
+INTERFACE="eth0"
+IP_ADDR="10.0.2.15"
+GATEWAY="10.0.2.2"
+PREFIX="24"
+BROADCAST="10.0.2.255"
+DOMAIN="barelinux.local"
+DNS1="10.0.2.3"
+DNS2="8.8.8.8"
+FONT="lat0-16"
+KEYMAP="us"
+LOCAL="n"
+LOG_LEVEL="4"
+OPTIMIZE="0"
+REPORT="y"
+SAVE_CH5="n"
+COMPARE="n"
+RUN_ICA="n"
+REBUILD_MAKEFILE="n"
+SCRIPT_ROOT="jhalfs"
+JHALFSDIR="$JHALFS_BUILD_DIR"
+LOGDIRBASE="logs"
+LOGDIR="$JHALFS_BUILD_DIR/logs"
+TESTLOGDIRBASE="test-logs"
+TESTLOGDIR="$JHALFS_BUILD_DIR/test-logs"
+FILELOGDIRBASE="installed-files"
+FILELOGDIR="$JHALFS_BUILD_DIR/installed-files"
+ICALOGDIR="$JHALFS_BUILD_DIR/logs/ICA"
+MKFILE="$JHALFS_BUILD_DIR/Makefile"
+XSL="lfs.xsl"
+PKG_LST="unpacked"
+DEL_LA_FILES="y"
+EOF
 
-log "Profiling the raw MLFS book as systemd with legacy arch filtering disabled"
+log "Running the pinned jhalfs configuration and Makefile generator"
 (
-  cd "$AUDIT"
-  xsltproc --nonet --xinclude \
-    --stringparam profile.revision systemd \
-    --stringparam profile.arch default \
-    --output prbook.xml \
-    "$MLFS_DIR/stylesheets/lfs-xsl/profile.xsl" "$MLFS_DIR/index.xml"
+  cd "$JHALFS_DIR"
+  printf 'yes\nyes\n' | ./jhalfs run
 )
-[[ -s "$AUDIT/prbook.xml" ]] || fail "jhalfs-compatible MLFS profile generation produced no XML"
-grep -q 'chapter-cross-tools' "$AUDIT/prbook.xml" || fail "profiled MLFS book lacks cross-toolchain chapter"
-grep -q 'chapter-building-system' "$AUDIT/prbook.xml" || fail "profiled MLFS book lacks final-system chapter"
-
-log "Running the pinned jhalfs extraction stylesheet against profiled raw MLFS"
-(
-  cd "$AUDIT"
-  xsltproc --nonet \
-    --stringparam luser-lgroup lfs:lfs \
-    --stringparam testsuite 1 \
-    --stringparam keepdir n \
-    --stringparam ncurses5 n \
-    --stringparam strip n \
-    --stringparam del-la-files y \
-    --stringparam full-locale n \
-    --stringparam timezone GMT \
-    --stringparam page letter \
-    --stringparam lang C \
-    --stringparam pkgmngt-wrap nn \
-    --stringparam hostname barelinux \
-    --stringparam interface eth0 \
-    --stringparam ip 10.0.2.15 \
-    --stringparam gateway 10.0.2.2 \
-    --stringparam prefix 24 \
-    --stringparam broadcast 10.0.2.255 \
-    --stringparam domain barelinux.local \
-    --stringparam nameserver1 10.0.2.3 \
-    --stringparam nameserver2 8.8.8.8 \
-    --stringparam console lat0-16@us:n/4 \
-    --stringparam script-root commands \
-    --stringparam jobs 2 \
-    --stringparam jobs-bp1 2 \
-    --stringparam test-mismatch n \
-    --output ./commands/ \
-    "$JHALFS_DIR/LFS/lfs.xsl" prbook.xml
-)
-COMMAND_COUNT="$(find "$AUDIT/commands" -type f | wc -l | tr -d ' ')"
+[[ -s "$JHALFS_BUILD_DIR/Makefile" ]] || fail "jhalfs did not generate its orchestration Makefile"
+[[ -d "$JHALFS_BUILD_DIR/lfs-commands" ]] || fail "jhalfs did not generate its command tree"
+COMMAND_COUNT="$(find "$JHALFS_BUILD_DIR/lfs-commands" -type f | wc -l | tr -d ' ')"
 (( COMMAND_COUNT > 0 )) || fail "jhalfs generated no package command scripts"
-find "$AUDIT/commands" -type f -print | sort > "$AUDIT/generated-command-inventory.txt"
-grep -RIl -E -- '-m32|/usr/lib32|lib32|32-bit' "$AUDIT/commands" > "$AUDIT/generated-multilib-command-files.txt" || true
-[[ -s "$AUDIT/generated-multilib-command-files.txt" ]] || fail "generated jhalfs scripts contain no recognizable MLFS multilib commands"
+find "$JHALFS_BUILD_DIR/lfs-commands" -type f -print | sort > "$AUDIT/generated-command-inventory.txt"
+grep -RIl -E -- '-m32|/usr/lib32|lib32|32-bit' "$JHALFS_BUILD_DIR/lfs-commands" > "$AUDIT/generated-multilib-command-files.txt" || true
+[[ -s "$AUDIT/generated-multilib-command-files.txt" ]] || fail "jhalfs-generated scripts contain no recognizable i686 multilib commands"
+cp "$JHALFS_BUILD_DIR/prbook.xml" "$AUDIT/prbook.xml"
+cp "$JHALFS_BUILD_DIR/Makefile" "$AUDIT/jhalfs-Makefile"
 
 log "Archiving generated command scripts for semantic review"
-tar -C "$AUDIT" -cJf "$AUDIT/generated-commands.tar.xz" commands
+tar -C "$JHALFS_BUILD_DIR" -cJf "$AUDIT/generated-commands.tar.xz" lfs-commands
 log "Writing source and compatibility report"
 python3 - "$AUDIT/source-audit.json" "$MLFS_DIR" "$JHALFS_DIR" "$MLFS_RESOLVED" "$JHALFS_RESOLVED" "$XML_COUNT" "$XSL_COUNT" "$COMMAND_COUNT" <<'PY'
 import json, pathlib, subprocess, sys
@@ -174,10 +204,11 @@ data = {
     "adapter_mode": {
         "book_source": "local raw MLFS checkout",
         "init_system": "systemd",
-        "legacy_arch_profile": "default",
+        "multilib_profile": "ml_32 (x86_64 + i686)",
+        "orchestrator": "pinned jhalfs run + generated Makefile",
         "generated_command_count": int(command_count),
     },
-    "compatibility_status": "JHALFS_XSLT_GENERATION_PASSED_REVIEW_REQUIRED",
+    "compatibility_status": "JHALFS_MAKEFILE_GENERATION_PASSED_REVIEW_REQUIRED",
     "package_builds_executed": False,
 }
 pathlib.Path(out).write_text(json.dumps(data, indent=2) + "\n")
@@ -187,9 +218,9 @@ PY
   printf 'jhalfs repository: %s\njhalfs pinned commit: %s\n' "$JHALFS_REPOSITORY" "$JHALFS_RESOLVED"
   printf 'XML files: %s\nXSL/XSLT files: %s\n' "$XML_COUNT" "$XSL_COUNT"
   printf 'Generated command scripts: %s\n' "$COMMAND_COUNT"
-  printf 'Compatibility status: XSLT generation tested; package builds and generated-command semantic review remain outstanding.\n'
+  printf 'Compatibility status: pinned jhalfs generated its Makefile and command graph; package builds and semantic review remain outstanding.\n'
   printf 'No package build was executed.\n'
 } > "$AUDIT/REPORT.txt"
 
-log "PASS: jhalfs generated command scripts from raw MLFS"
-log "NOTE: inspect generated scripts before enabling package builds"
+log "PASS: pinned jhalfs generated its orchestration Makefile and command graph from raw MLFS"
+log "NOTE: package execution remains gated until the generated graph and host isolation are reviewed"
