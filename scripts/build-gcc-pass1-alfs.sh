@@ -167,10 +167,10 @@ GCC_TARGET="$("$CROSS_GCC" -dumpmachine)"
 
 RECIPE_SHA="$(sha256sum "$RECIPE" | awk '{print $1}')"
 {
-  printf 'stage=gcc-pass1\npackage=gcc\nversion=16.2.0\n'
+  printf 'artifact_schema=2\nstage=gcc-pass1\npackage=gcc\nversion=16.2.0\n'
   awk -F '\t' 'NF == 5 && $1 !~ /^#/ {printf "source_%s_%s=%s\n", $1, $4, $5}' "$MANIFEST"
   printf 'recipe_sha256=%s\nmlfs_commit=%s\njhalfs_commit=%s\n' "$RECIPE_SHA" "$MLFS_COMMIT" "$JHALFS_COMMIT"
-  printf 'target=%s\nprefix=%s\nhost_arch=%s\ncompleted_utc=%s\nstatus=success\n' "$LFS_TGT" "$TOOLS" "$(uname -m)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'target=%s\nprefix=%s\nhost_arch=%s\nlfs_uid=%s\nlfs_gid=%s\ncompleted_utc=%s\nstatus=success\n' "$LFS_TGT" "$TOOLS" "$(uname -m)" "$(id -u lfs)" "$(id -g lfs)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "$STAGE/BUILD-SUCCESS"
 
 log "PASS: generated ALFS recipe compiled, installed, and validated GCC Pass 1"
