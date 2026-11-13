@@ -19,6 +19,11 @@ for d in sources build rootfs output logs; do
   [[ -d "$BLF_HOME/workspaces/TestDistro/$d" ]]
 done
 bash "$LFS" TestDistro status | grep -q 'Profile: valid'
+bash "$LFS" TestDistro build plan | grep -q 'full-book'
+if bash "$LFS" TestDistro build full-book >"$TMP/full-book.out" 2>&1; then
+  echo 'full-book unexpectedly ran without its verified ALFS checkpoint' >&2; exit 1
+fi
+grep -q 'requires the verified ALFS Binutils checkpoint' "$TMP/full-book.out"
 if bash "$LFS" init '../escape' >/dev/null 2>&1; then
   echo 'unsafe project name was accepted' >&2; exit 1
 fi
