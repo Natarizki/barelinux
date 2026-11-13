@@ -22,7 +22,14 @@ UNPACK="$WORKSPACE/sources/unpacked"
 STAGE="$WORKSPACE/build/mlfs-13.1/binutils-pass1"
 LFS="$WORKSPACE/rootfs"
 ARCHIVE="$CACHE/${url##*/}"
+for path in "$WORKSPACE/sources" "$CACHE" "$UNPACK" "$WORKSPACE/build" "$WORKSPACE/build/mlfs-13.1" "$STAGE" "$LFS" "$LFS/tools" "$LFS/usr" "$LFS/usr/share"; do
+  [[ ! -L "$path" ]] || fail "refusing symlinked build path: $path"
+done
 mkdir -p "$CACHE" "$UNPACK" "$STAGE" "$LFS/tools" "$LFS/usr/share"
+for path in "$CACHE" "$UNPACK" "$STAGE" "$LFS" "$LFS/tools" "$LFS/usr/share"; do
+  resolved="$(realpath -m "$path")"
+  [[ "$resolved" == "$WORKSPACE/"* ]] || fail "build path escaped workspace: $path"
+done
 [[ ! -e "$STAGE/.started" && ! -e "$UNPACK/binutils-2.47" ]] || fail "stage/source already exists; inspect before retrying"
 if [[ -f "$ARCHIVE" ]] && ! printf '%s  %s\n' "$digest" "$ARCHIVE" | sha256sum -c --status; then rm -f "$ARCHIVE"; fi
 if [[ ! -f "$ARCHIVE" ]]; then
@@ -33,8 +40,11 @@ if [[ ! -f "$ARCHIVE" ]]; then
   mv "$part" "$ARCHIVE"
 fi
 printf '%s  %s\n' "$digest" "$ARCHIVE" | sha256sum -c -
-python3 - "$ARCHIVE" <<'PY'
+log "Validating and safely extracting verified archive"
+python3 - "$ARCHIVE" "$UNPACK" <<'PY'
 import sys, tarfile
+if sys.version_info < (3, 12):
+    raise SystemExit("Python 3.12 or newer is required for safe tar extraction")
 with tarfile.open(sys.argv[1], "r:*") as tf:
     entries = tf.getmembers()
     if not entries:
@@ -45,13 +55,8 @@ with tarfile.open(sys.argv[1], "r:*") as tf:
             raise SystemExit(f"unsafe archive path: {item.name!r}")
         if parts[0] != "binutils-2.47":
             raise SystemExit(f"unexpected archive root: {item.name!r}")
-        if item.issym() or item.islnk():
-            target = item.linkname
-            if target.startswith("/") or ".." in target.split("/"):
-                raise SystemExit(f"unsafe archive link: {item.name!r} -> {target!r}")
+    tf.extractall(path=sys.argv[2], filter="data")
 PY
-log "Extracting verified archive"
-tar -xf "$ARCHIVE" -C "$UNPACK" --no-same-owner --no-same-permissions
 SOURCE="$UNPACK/binutils-2.47"
 [[ -x "$SOURCE/configure" ]] || fail "archive missing configure script"
 : > "$STAGE/.started"
