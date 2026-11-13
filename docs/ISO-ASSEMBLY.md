@@ -30,3 +30,8 @@ A produced image is only a build candidate until it passes:
 4. A test that systemd reaches the declared live target and that the root filesystem is read-only.
 
 The current foundation workflow tests only the builder's fail-closed preflight. It does not run a full distro build or claim bootability.
+
+
+## QEMU boot acceptance
+
+After an ISO is assembled, run `scripts/test-iso-boot.sh out/barelinux-x86_64.iso` on a Linux host with QEMU and OVMF installed. The test boots the same ISO once through BIOS and once through UEFI, captures the serial console, and requires systemd to reach the multi-user target. It is intentionally not part of the foundation CI because no real BareLinux rootfs, kernel, or ISO exists yet.
