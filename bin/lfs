@@ -17,7 +17,7 @@ Usage:
   lfs doctor                  Check mandatory LFS build-host tools and resources
   lfs DISTRO status           Show project state
   lfs DISTRO configure        Open the distro profile in $EDITOR
-  lfs DISTRO build [STAGE]    Build an MLFS stage (default: binutils-pass1)
+  lfs DISTRO build [STAGE]    Plan or run an MLFS stage (default: plan)
   lfs DISTRO export           Export a validated bootable ISO
   lfs help
 
@@ -62,27 +62,27 @@ command="$1"; shift
 case "$command" in
   help|-h|--help) usage ;;
   doctor)
-    printf 'BareLinux mandatory LFS/MLFS build preflight\\n'
-    printf 'Host architecture: %s\\n' "$(uname -m)"
-    printf 'Required target: x86_64\\n'
-    [[ "$(uname -m)" == x86_64 ]] || printf 'WARNING: host is not x86_64; cross-build support is not implemented.\\n'
+    printf 'BareLinux mandatory LFS/MLFS build preflight\n'
+    printf 'Host architecture: %s\n' "$(uname -m)"
+    printf 'Required target: x86_64\n'
+    [[ "$(uname -m)" == x86_64 ]] || printf 'WARNING: host is not x86_64; cross-build support is not implemented.\n'
     required=(bash awk bison bzip2 cc c++ coreutils diff find gawk gcc grep gzip m4 make patch perl python3 sed tar texi2any xz ld as readelf file git curl sha256sum)
     missing=0
     for tool in "${required[@]}"; do
       if command -v "$tool" >/dev/null 2>&1; then
-        printf '  [OK]      %s\\n' "$tool"
+        printf '  [OK]      %s\n' "$tool"
       else
-        printf '  [MISSING] %s\\n' "$tool"
+        printf '  [MISSING] %s\n' "$tool"
         missing=$((missing + 1))
       fi
     done
-    printf '\\nAvailable workspace filesystem space:\\n'
+    printf '\nAvailable workspace filesystem space:\n'
     df -h "$BLF_ROOT" 2>/dev/null || df -h "$HOME"
     if (( missing > 0 )); then
-      printf '\\nMissing %d build prerequisite(s). No build was started.\\n' "$missing"
+      printf '\nMissing %d build prerequisite(s). No build was started.\n' "$missing"
       exit 1
     fi
-    printf '\\nHost tool preflight passed. This does not mean the LFS toolchain or target system is built.\\n'
+    printf '\nHost tool preflight passed. This does not mean the LFS toolchain or target system is built.\n'
     ;;
   init)
     [[ $# -eq 1 ]] || fail "usage: lfs init DISTRO"
