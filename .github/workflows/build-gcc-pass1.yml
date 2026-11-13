@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   gcc-pass1:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == github.sha)
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Build GCC Pass 1 from generated raw MLFS recipe
     runs-on: ubuntu-latest
     timeout-minutes: 90
