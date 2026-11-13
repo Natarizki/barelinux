@@ -42,6 +42,7 @@ jobs:
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/REPORT.txt
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/source-audit.json
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/prbook.xml
+            ${{ runner.temp }}/barelinux-alfs-mlfs/audit/jhalfs-Makefile
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/generated-commands.tar.xz
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/*-files.txt
             ${{ runner.temp }}/barelinux-alfs-mlfs/audit/generated-command-inventory.txt
