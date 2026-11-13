@@ -5,7 +5,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "scripts/build-binutils-pass1.sh"
+      - "scripts/build-binutils-pass1-alfs.sh"
+      - "scripts/validate-alfs-mlfs-sources.sh"
+      - "sources/locks/alfs-mlfs.lock"
       - "sources/manifests/mlfs-13.1-toolchain.tsv"
       - ".github/workflows/build-binutils-pass1.yml"
 
@@ -14,30 +16,36 @@ permissions:
 
 jobs:
   binutils-pass1:
-    name: Compile and validate Binutils Pass 1
+    name: Build Binutils Pass 1 from generated raw MLFS recipe
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out BareLinux
         uses: actions/checkout@v4
-      - name: Install MLFS host prerequisites
+
+      - name: Install MLFS and ALFS host prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file
-          df -h "$RUNNER_TEMP"
+          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc docbook-xml docbook-xsl
+
       - name: Validate build script syntax
-        run: bash -n scripts/build-binutils-pass1.sh
-      - name: Compile Binutils Pass 1 from verified source
+        run: |
+          bash -n scripts/build-binutils-pass1-alfs.sh
+          bash -n scripts/validate-alfs-mlfs-sources.sh
+
+      - name: Generate and execute ALFS Binutils Pass 1 recipe
         env:
           BLF_BUILD_JOBS: "2"
         run: |
           mkdir -p "$RUNNER_TEMP/barelinux-mlfs"
-          bash scripts/build-binutils-pass1.sh "$RUNNER_TEMP/barelinux-mlfs"
-      - name: Package stage output
+          bash scripts/build-binutils-pass1-alfs.sh "$RUNNER_TEMP/barelinux-mlfs"
+
+      - name: Package verified tool prefix
         if: success()
         run: |
-          tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/binutils-pass1-tools.tar.xz" rootfs/tools
-          cp "$RUNNER_TEMP/barelinux-mlfs/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
+          tar -C "$RUNNER_TEMP/barelinux-mlfs/target" -cJf "$RUNNER_TEMP/binutils-pass1-tools.tar.xz" tools
+          cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
+
       - name: Upload verified Binutils Pass 1 artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -48,11 +56,15 @@ jobs:
             ${{ runner.temp }}/BUILD-SUCCESS
           if-no-files-found: error
           retention-days: 14
-      - name: Upload build logs on failure
+
+      - name: Upload build and generated-recipe logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: barelinux-mlfs-binutils-pass1-logs
-          path: ${{ runner.temp }}/barelinux-mlfs/build/mlfs-13.1/binutils-pass1/*.log
+          name: barelinux-mlfs-binutils-pass1-alfs-logs
+          path: |
+            ${{ runner.temp }}/barelinux-mlfs/target/build/mlfs-13.1/binutils-pass1/*.log
+            ${{ runner.temp }}/barelinux-mlfs/alfs/audit/REPORT.txt
+            ${{ runner.temp }}/barelinux-mlfs/alfs/audit/generated-command-inventory.txt
           if-no-files-found: ignore
           retention-days: 7
