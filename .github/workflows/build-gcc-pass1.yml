@@ -37,7 +37,7 @@ jobs:
       - name: Install MLFS and ALFS host prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc libxml2-utils docbook-xml docbook-xsl
+          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc libxml2-utils docbook-xml docbook-xsl util-linux
 
       - name: Validate build script syntax
         run: |
@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           ARTIFACT="$RUNNER_TEMP/binutils-artifact"
           MARKER="$ARTIFACT/BUILD-SUCCESS"
-          ARCHIVE="$ARTIFACT/binutils-pass1-tools.tar.xz"
+          ARCHIVE="$ARTIFACT/binutils-pass1-build-root.tar.xz"
           test -s "$MARKER"
           test -s "$ARCHIVE"
           grep -Fxq 'stage=binutils-pass1' "$MARKER"
@@ -98,7 +98,7 @@ jobs:
                       if target.startswith("/"):
                           raise SystemExit(f"absolute link rejected: {name!r}")
                       resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
-                      if resolved == ".." or resolved.startswith("../") or not resolved.startswith("tools/"):
+                      if resolved == ".." or resolved.startswith("../") or not resolved.startswith("target/"):
                           raise SystemExit(f"artifact link escapes tools/: {name!r}")
                   elif not (item.isfile() or item.isdir()):
                       raise SystemExit(f"unsupported artifact member: {name!r}")
@@ -117,7 +117,7 @@ jobs:
       - name: Package verified tool prefix
         if: success()
         run: |
-          tar -C "$RUNNER_TEMP/barelinux-mlfs/target" -cJf "$RUNNER_TEMP/gcc-pass1-tools.tar.xz" tools
+          tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/gcc-pass1-build-root.tar.xz" target
           cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/gcc-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
 
       - name: Upload verified GCC Pass 1 artifact
@@ -126,7 +126,7 @@ jobs:
         with:
           name: barelinux-mlfs-13.1-gcc-pass1
           path: |
-            ${{ runner.temp }}/gcc-pass1-tools.tar.xz
+            ${{ runner.temp }}/gcc-pass1-build-root.tar.xz
             ${{ runner.temp }}/BUILD-SUCCESS
           if-no-files-found: error
           retention-days: 14
