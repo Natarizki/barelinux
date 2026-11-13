@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# BareLinux Factory command-line front end (workspace milestone).
+set -euo pipefail
+
+BLF_ROOT="${BLF_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/barelinux-factory}"
+WORKSPACES="$BLF_ROOT/workspaces"
+
+fail() { printf 'lfs: error: %s\n' "$*" >&2; exit 2; }
+usage() {
+  cat <<'USAGE'
+BareLinux Factory (BLF)
+
+Usage:
+  lfs enter [DISTRO]          Enter the isolated BLF workspace shell
+  lfs init DISTRO             Create a distro project
+  lfs DISTRO status           Show project state
+  lfs DISTRO configure        Open the distro profile in $EDITOR
+  lfs DISTRO build            Build the distro (build engine not yet available)
+  lfs DISTRO export           Export a bootable ISO (export engine not yet available)
+  lfs help
+
+Project names: 1-32 characters; start with a letter; then letters, digits,
+hyphens, or underscores.
+USAGE
+}
+valid_name() {
+  [[ "$1" =~ ^[A-Za-z][A-Za-z0-9_-]{0,31}$ ]]
+}
+project_dir() {
+  valid_name "$1" || fail "invalid distro name: $1"
+  printf '%s/%s' "$WORKSPACES" "$1"
+}
+require_project() {
+  local dir
+  dir="$(project_dir "$1")"
+  [[ -d "$dir" && -f "$dir/distro.conf" ]] || fail "project '$1' does not exist; create it with: lfs init $1"
+  printf '%s' "$dir"
+}
+validate_profile() {
+  local file="$1" line key value
+  local -A seen=()
+  [[ -f "$file" ]] || fail "missing distro.conf"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" == *=* ]] || fail "invalid profile line (expected KEY=VALUE)"
+    key="${line%%=*}"; value="${line#*=}"
+    [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || fail "invalid profile key: $key"
+    [[ -z "${seen[$key]+x}" ]] || fail "duplicate profile key: $key"
+    [[ "$value" != *$'\n'* && "$value" != *$'\r'* ]] || fail "invalid profile value"
+    seen["$key"]=1
+  done < "$file"
+  for key in DISTRO_NAME DISTRO_ID DISTRO_VERSION TARGET_ARCH; do
+    [[ -n "${seen[$key]+x}" ]] || fail "profile is missing $key"
+  done
+  grep -Fxq 'TARGET_ARCH=x86_64' "$file" || fail "this BLF milestone supports TARGET_ARCH=x86_64 only"
+}
+[[ $# -ge 1 ]] || { usage; exit 2; }
+command="$1"; shift
+case "$command" in
+  help|-h|--help) usage ;;
+  init)
+    [[ $# -eq 1 ]] || fail "usage: lfs init DISTRO"
+    name="$1"; dir="$(project_dir "$name")"
+    [[ ! -e "$dir" ]] || fail "project already exists: $name"
+    mkdir -p "$WORKSPACES"
+    mkdir "$dir"
+    cat > "$dir/distro.conf" <<PROFILE
+# BareLinux Factory distro profile. Edit values, do not source this file.
+DISTRO_NAME=$name
+DISTRO_ID=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
+DISTRO_VERSION=0.1.0
+TARGET_ARCH=x86_64
+CPU_BASELINE=x86-64
+LIBC=glibc
+INIT_SYSTEM=systemd
+BOOTLOADER=limine
+FILESYSTEM=btrfs
+PROFILE_VERSION=1
+PROFILE
+    mkdir -p "$dir"/{sources,build,rootfs,output,logs}
+    printf 'Created BLF project: %s\nWorkspace: %s\n' "$name" "$dir"
+    printf 'Next: lfs %s configure\n' "$name"
+    ;;
+  enter)
+    [[ $# -le 1 ]] || fail "usage: lfs enter [DISTRO]"
+    mkdir -p "$WORKSPACES"
+    if [[ $# -eq 1 ]]; then
+      dir="$(require_project "$1")"
+      export BLF_DISTRO="$1"
+    else
+      dir="$BLF_ROOT"
+      export BLF_DISTRO=""
+    fi
+    export BLF_ROOT WORKSPACES LFS_WORKSPACE="$dir"
+    export PS1="(barelinux-factory:${BLF_DISTRO:-workspace}) ${PS1:-\\u@\\h:\\w\\$ }"
+    printf 'Entering BLF workspace shell. Host root is not changed.\nWorkspace: %s\nType exit to leave.\n' "$dir"
+    exec "${SHELL:-/bin/bash}" --noprofile --norc -i
+    ;;
+  *)
+    [[ $# -ge 1 ]] || fail "expected a subcommand; run: lfs help"
+    name="$command"; sub="$1"; shift
+    [[ $# -eq 0 ]] || fail "unexpected extra arguments"
+    dir="$(require_project "$name")"
+    case "$sub" in
+      status)
+        validate_profile "$dir/distro.conf"
+        printf 'Project: %s\nWorkspace: %s\nProfile: valid\n' "$name" "$dir"
+        if [[ -f "$dir/build/BUILD-SUCCESS" ]]; then
+          printf 'Build: completed (marker present; outputs still require validation)\n'
+        else
+          printf 'Build: not built\n'
+        fi
+        ;;
+      configure)
+        validate_profile "$dir/distro.conf"
+        editor="${EDITOR:-}"
+        [[ -n "$editor" ]] || fail 'EDITOR is not set; set EDITOR to your preferred text editor'
+        # Deliberately split editor command into executable and arguments without eval.
+        read -r -a editor_cmd <<< "$editor"
+        [[ ${#editor_cmd[@]} -gt 0 ]] || fail 'EDITOR is empty'
+        "${editor_cmd[@]}" "$dir/distro.conf"
+        validate_profile "$dir/distro.conf"
+        printf 'Profile validated: %s\n' "$dir/distro.conf"
+        ;;
+      build)
+        validate_profile "$dir/distro.conf"
+        fail "the LFS build engine is not implemented yet; refusing to create a fake build result"
+        ;;
+      export)
+        validate_profile "$dir/distro.conf"
+        fail "ISO export is not implemented yet; no bootable ISO was produced"
+        ;;
+      *) fail "unknown project action: $sub (run: lfs help)" ;;
+    esac
+    ;;
+esac
