@@ -14,7 +14,7 @@ WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 [[ "$(stat -c '%u' "$WORKSPACE")" == "$(id -u)" ]] || fail "workspace must be owned by current build user"
 
-for tool in bash git python3 xsltproc curl sha256sum sha512sum tar make gcc g++ ld as realpath stat df awk grep tee nproc; do
+for tool in bash git python3 xsltproc curl sha256sum sha512sum tar make gcc g++ ld as realpath stat df awk grep tee nproc sudo mountpoint script groupadd useradd id; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
@@ -37,14 +37,14 @@ TARGET="$WORKSPACE/target"
 SOURCES="$TARGET/sources"
 TOOLS="$TARGET/tools"
 STAGE="$TARGET/build/mlfs-13.1/gcc-pass1"
-RECIPE="$ALFS_WORK/build/jhalfs/lfs-commands/chapter05/502-gcc-pass1"
-[[ ! -e "$ALFS_WORK" ]] || fail "ALFS audit directory already exists; use a fresh workspace"
+RECIPE="$TARGET/jhalfs/lfs-commands/chapter05/502-gcc-pass1"
+[[ -s "$TARGET/jhalfs/Makefile" ]] || fail "the verified Binutils artifact lacks the generated jhalfs Makefile"
 [[ -d "$TOOLS" ]] || fail "Binutils Pass 1 tools prefix is missing; install the verified prerequisite artifact first"
+[[ -f "$TARGET/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" ]] || fail "Binutils Pass 1 success marker is missing"
+grep -Fxq "mlfs_commit=$MLFS_COMMIT" "$TARGET/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" || fail "Binutils artifact MLFS commit mismatch"
+grep -Fxq "jhalfs_commit=$JHALFS_COMMIT" "$TARGET/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" || fail "Binutils artifact jhalfs commit mismatch"
 mkdir -p "$SOURCES" "$STAGE"
-
-log "Generating the GCC recipe from the pinned raw MLFS book and jhalfs"
-bash "$ROOT_DIR/scripts/validate-alfs-mlfs-sources.sh" "$ALFS_WORK"
-[[ -f "$RECIPE" && ! -L "$RECIPE" ]] || fail "jhalfs did not generate the GCC Pass 1 recipe"
+[[ -f "$RECIPE" && ! -L "$RECIPE" ]] || fail "verified jhalfs build root lacks the GCC Pass 1 recipe"
 for required in '--target=$LFS_TGT' '--prefix=$LFS/tools' '--enable-multilib' '--with-multilib-list=m64,m32' 'mpfr-4.2.2.tar.xz' 'gmp-6.3.0.tar.xz' 'mpc-1.4.1.tar.xz'; do
   grep -Fq -- "$required" "$RECIPE" || fail "generated GCC recipe is missing expected MLFS instruction: $required"
 done
@@ -122,11 +122,21 @@ export PATH="$TOOLS/bin:$TOOLS/$LFS_TGT/bin:$PATH"
 command -v "$LFS_TGT-ld" >/dev/null 2>&1 || fail "Binutils prerequisite artifact is missing target linker"
 command -v "$LFS_TGT-as" >/dev/null 2>&1 || fail "Binutils prerequisite artifact is missing target assembler"
 
-log "Executing the generated MLFS GCC Pass 1 command script"
-(
-  cd "$WORKSPACE"
-  bash "$RECIPE"
-) 2>&1 | tee "$STAGE/build.log"
+log "Executing GCC Pass 1 through the generated jhalfs Makefile target"
+MOUNTPOINT="/mnt/barelinux-lfs"
+mkdir -p "$MOUNTPOINT"
+mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
+sudo groupadd --force lfs
+if ! id lfs >/dev/null 2>&1; then
+  sudo useradd --create-home --home-dir /home/lfs --shell /bin/bash --gid lfs lfs
+fi
+sudo mount --bind "$TARGET" "$MOUNTPOINT"
+cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
+trap cleanup_build_mount EXIT
+grep -Fq '502-gcc-pass1:' "$MOUNTPOINT/jhalfs/Makefile" || fail "jhalfs Makefile lacks the GCC Pass 1 target"
+script -q -e -c "stty rows 24 cols 80; make -C '$MOUNTPOINT/jhalfs' BREAKPOINT=502-gcc-pass1" /dev/null 2>&1 | tee "$STAGE/build.log"
+cleanup_build_mount
+trap - EXIT
 
 CROSS_GCC="$TOOLS/bin/$LFS_TGT-gcc"
 CROSS_GXX="$TOOLS/bin/$LFS_TGT-g++"
