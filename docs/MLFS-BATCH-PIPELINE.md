@@ -1,6 +1,6 @@
 # BareLinux Raw MLFS + ALFS Package Pipeline
 
-**Status:** Architecture approved. Binutils Pass 1 is built and uploaded; raw-book integration and the complete package pipeline are not implemented yet.
+**Status:** Raw-book integration and jhalfs XSLT generation pass CI. 131 package command scripts were generated from pinned raw MLFS 13.1. The Binutils Pass 1 workflow has been switched to execute its generated ALFS recipe; the complete package pipeline is not implemented yet.
 
 ## Goal
 
@@ -11,7 +11,8 @@ Build BareLinux from the official raw MLFS 13.1 instructions using ALFS/jhalfs f
 - Raw book: official MLFS 13.1 source tree from the official LFS Git repository's `multilib` branch.
 - Automation: official ALFS implementation, jhalfs.
 - Adapter: BareLinux-maintained integration that makes jhalfs consume and validate raw MLFS.
-- The moving `multilib` branch must be resolved to an exact commit matching the approved MLFS 13.1 release before any reproducible build.
+- Pinned MLFS commit: `3d65852c3f2506a7bd1a0e052d43a5a3499a079f` (resolved from the official `multilib` branch; MLFS 13.1 release marker verified).
+- Pinned jhalfs commit: `a13fd9828b8c28d02dfde824a441cd7dd3a1643d`.
 - jhalfs compatibility with MLFS is not assumed. Its generated scripts and dependency graph must pass explicit compatibility tests.
 
 See [ALFS + Raw MLFS Integration](ALFS-MLFS-INTEGRATION.md).
@@ -28,6 +29,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
    - Run jhalfs against the raw MLFS tree through the BareLinux adapter.
    - Audit generated recipes and dependency graph for expected multilib branches and package order.
    - Fail closed on unsupported XML/XSLT constructs or any fallback to vanilla LFS.
+   - **Current result:** CI generated 131 command scripts; 35 generated scripts contain recognizable multilib instructions.
 
 2. **Source and policy gate**
    - Reconcile the package inventory against the complete MLFS 13.1 book and BareLinux profile.
@@ -96,12 +98,11 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 
 ## Current blockers
 
-- Exact raw MLFS 13.1 source commit and jhalfs commit are not yet pinned.
-- ALFS–MLFS adapter and generated-recipe compatibility tests do not exist yet.
+- Full jhalfs Makefile orchestration and generated-command semantic review are still pending.
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - Only Binutils SHA-256 is independently pinned in the initial toolchain manifest; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Only Binutils Pass 1 currently has a real compile/install/validation implementation and a dedicated package workflow (`.github/workflows/build-binutils-pass1.yml`).
+- Binutils Pass 1 is the first package workflow being migrated to execute the ALFS-generated recipe (`.github/workflows/build-binutils-pass1.yml`); its generated-recipe build must pass before it is considered validated.
 - Secure build isolation, remaining package recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
