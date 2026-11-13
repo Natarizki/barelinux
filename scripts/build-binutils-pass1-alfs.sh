@@ -93,7 +93,8 @@ with tarfile.open(sys.argv[1], "r:*") as tf:
             raise SystemExit(f"unsupported archive member type: {name!r}")
 PY
 
-: > "$TARGET/usr/share/config.site"
+sudo mkdir -p "$TARGET/usr/share"
+sudo install -m 0644 /dev/null "$TARGET/usr/share/config.site"
 export LFS="$TARGET"
 export LFS_TGT=x86_64-lfs-linux-gnu
 export CONFIG_SITE="$TARGET/usr/share/config.site"
