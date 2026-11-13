@@ -10,7 +10,7 @@ log() { printf '[binutils-pass1] %s\n' "$*"; }
 WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$(stat -c '%u' "$WORKSPACE")" == "$(id -u)" ]] || fail "workspace must be owned by current build user"
 [[ "$WORKSPACE" != "/" && "$(uname -m)" == "x86_64" ]] || fail "requires a non-root workspace on an x86_64 host"
-for tool in bash curl sha256sum tar make gcc g++ ld as python3 realpath stat df nproc awk; do command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"; done
+for tool in bash curl sha256sum tar make gcc g++ ld as python3 realpath stat df nproc awk bison flex makeinfo xz; do command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"; done
 free_kb="$(df -Pk "$WORKSPACE" | awk 'NR==2 {print $4}')"
 [[ "$free_kb" =~ ^[0-9]+$ ]] && (( free_kb >= 2097152 )) || fail "at least 2 GiB free space required"
 manifest="$ROOT_DIR/sources/manifests/mlfs-13.1-toolchain.tsv"
