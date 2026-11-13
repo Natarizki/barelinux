@@ -1,0 +1,27 @@
+name: Validate BareLinux Foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate configuration and scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate shell syntax
+        run: |
+          bash -n scripts/check-config.sh
+
+      - name: Validate BareLinux configuration
+        run: |
+          bash scripts/check-config.sh
