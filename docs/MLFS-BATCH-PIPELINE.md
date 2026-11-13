@@ -8,7 +8,7 @@ Build the complete BareLinux base system and ISO as a coordinated pipeline, rath
 
 ## Why the build is staged
 
-MLFS is a dependency-ordered source build, not a flat list of independent packages. The cross-toolchain must exist before temporary tools; temporary tools must exist before entering the target root; the target root must be complete before kernel, initramfs, and ISO assembly. A single giant job would make failures expensive and difficult to resume. BareLinux will use a dependency graph with stage boundaries and reusable artifacts.
+MLFS is a dependency-ordered source build, not a flat list of independent packages. The cross-toolchain must exist before temporary tools; temporary tools must exist before entering the target root; the target root must be complete before kernel, initramfs, and ISO assembly. A single giant job would make failures expensive and difficult to resume. BareLinux will use one independently triggerable GitHub Actions workflow per package or narrowly defined build stage. Each workflow owns its logs, status, retry boundary, and artifact. A dependency graph controls which upstream artifacts must exist before a downstream workflow can run.
 
 ## Planned pipeline groups
 
@@ -55,8 +55,10 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 
 ## Parallelism and artifact strategy
 
-- Parallelize only packages whose dependency inputs are already available and whose build/install roots are isolated.
-- Keep toolchain transitions and target-root mutations serialized.
+- Give every package its own workflow file (for example, `build-binutils-pass1.yml`, `build-gcc-pass1.yml`, and `build-glibc.yml`); do not combine unrelated package builds into a matrix or monolithic workflow.
+- Trigger a package workflow independently with `workflow_dispatch` and automatically when its own recipe or source lock changes.
+- Parallelize only packages whose dependency artifacts are already available and whose build/install roots are isolated.
+- Keep toolchain transitions and target-root mutations serialized by explicit prerequisite artifacts and validation gates.
 - Use separate CI jobs for independent package groups; pass immutable, checksummed artifacts between jobs.
 - Cache only verified source archives and completed stage outputs. Never treat a cache hit as proof of build success.
 - Preserve failed-job logs and stage manifests so a retry can resume from the last validated boundary.
@@ -76,7 +78,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - The initial source manifest has only Binutils SHA-256 independently pinned; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Only Binutils Pass 1 currently has a real compile/install/validation implementation.
+- Only Binutils Pass 1 currently has a real compile/install/validation implementation and a dedicated package workflow (`.github/workflows/build-binutils-pass1.yml`).
 - Secure chroot/build isolation, the remaining MLFS recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
