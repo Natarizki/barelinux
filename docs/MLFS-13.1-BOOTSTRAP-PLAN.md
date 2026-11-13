@@ -48,6 +48,14 @@ The current package inventory is maintained in [mlfs-13.1-package-inventory.tsv]
 
 The inventory does not yet claim to include every supplemental documentation archive listed in Chapter 3. Those can be tracked separately if the build or documentation policy needs them.
 
+## Required patch inventory
+
+The Chapter 3.3 patch list is tracked separately in [mlfs-13.1-patches.tsv](../sources/manifests/mlfs-13.1-patches.tsv). It records the exact upstream URLs and the book-published MD5 values as provenance only. Those MD5 values are not accepted by the SHA-256 download gate.
+
+BareLinux tracks the eight patches relevant to the selected userspace, with the glibc FHS patch marked for review because BareLinux has its own immutable filesystem policy. The OpenRC lock patch is retained as an excluded reference because BareLinux uses systemd, not OpenRC. Every patch SHA-256 remains pending independent verification; therefore no patch download is currently authorized.
+
+The patch inventory is checked by `scripts/check-patch-inventory.sh` in CI. A structurally valid inventory does not mean that its patches have been downloaded, verified, or applied.
+
 ## Source integrity policy
 
 No source is eligible for compilation until all of the following are recorded:
@@ -84,8 +92,8 @@ Completed:
 
 Not yet completed:
 - 83-entry MLFS 13.1 build-package inventory and CI inventory validator
-- Full source URL/SHA-256 lockfile and Chapter 3 patch manifest
-- Verified digests for every required archive and patch
+- Full source URL/SHA-256 lockfile and independent SHA-256 verification for all required archives and patches
+- Verified SHA-256 digests for every required archive and applicable patch
 - Complete host-requirements and 32-bit execution checks
 - Reproducibly pinned container and package snapshot
 - Cross-toolchain, temporary tools, chroot, and final system builds
