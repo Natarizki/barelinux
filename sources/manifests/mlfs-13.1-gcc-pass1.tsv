@@ -1,0 +1,6 @@
+# BareLinux MLFS 13.1 GCC Pass 1 inputs
+# package<TAB>version<TAB>archive_url<TAB>digest_algorithm<TAB>digest
+gcc	16.2.0	https://ftp.gnu.org/gnu/gcc/gcc-16.2.0/gcc-16.2.0.tar.xz	sha512	c51c30ca7422d0cbecf504b2e0f33c3aca31e0f90a76b65217f465163fa6fa17b3f5de39e145c47e5bab90ac0ce7fff3b03c8d553ae36e01faaea5a50f8648d1
+mpfr	4.2.2	https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz	sha256	b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01
+gmp	6.3.0	https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz	sha256	a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898
+mpc	1.4.1	https://ftp.gnu.org/gnu/mpc/mpc-1.4.1.tar.xz	sha256	91204cd32f164bd3b7c992d4a6a8ce6519511aadab30f78b6982d0bf8d73e931
