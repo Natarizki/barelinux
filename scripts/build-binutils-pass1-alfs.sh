@@ -133,7 +133,7 @@ grep -q 'elf_x86_64' <<< "$LD_VERSION" || fail "cross linker lacks x86_64 ELF su
 
 RECIPE_SHA="$(sha256sum "$RECIPE" | awk '{print $1}')"
 {
-  printf 'stage=binutils-pass1\npackage=binutils\nversion=%s\n' "$VERSION"
+  printf 'artifact_schema=2\nstage=binutils-pass1\npackage=binutils\nversion=%s\n' "$VERSION"
   printf 'source_sha256=%s\nrecipe_sha256=%s\n' "$DIGEST" "$RECIPE_SHA"
   printf 'mlfs_commit=%s\njhalfs_commit=%s\ntarget=%s\nprefix=%s\n' "$MLFS_COMMIT" "$JHALFS_COMMIT" "$LFS_TGT" "$TOOLS"
   printf 'host_arch=%s\nlfs_uid=%s\nlfs_gid=%s\ncompleted_utc=%s\nstatus=success\n' "$(uname -m)" "$(id -u lfs)" "$(id -g lfs)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
