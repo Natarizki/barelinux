@@ -124,7 +124,7 @@ command -v "$LFS_TGT-as" >/dev/null 2>&1 || fail "Binutils prerequisite artifact
 
 log "Executing GCC Pass 1 through the generated jhalfs Makefile target"
 MOUNTPOINT="/mnt/barelinux-lfs"
-mkdir -p "$MOUNTPOINT"
+sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
 sudo groupadd --force lfs
 if ! id lfs >/dev/null 2>&1; then
