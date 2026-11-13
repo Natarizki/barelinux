@@ -27,7 +27,11 @@ bash "$ROOT_DIR/scripts/check-kernel-config.sh" "$KERNEL_CONFIG"
 SYSTEMD="$ROOTFS/usr/lib/systemd/systemd"
 [[ -x "$SYSTEMD" ]] || SYSTEMD="$ROOTFS/lib/systemd/systemd"
 [[ -x "$SYSTEMD" ]] || fail "Rootfs must contain executable systemd at /usr/lib/systemd/systemd or /lib/systemd/systemd"
+[[ -x "$ROOTFS/sbin/init" ]] || fail "Rootfs must provide executable /sbin/init linked to systemd"
 [[ -f "$ROOTFS/etc/os-release" ]] || fail "Rootfs is missing /etc/os-release"
+for dir in etc var home root tmp run usr; do
+    [[ -d "$ROOTFS/$dir" ]] || fail "Rootfs is missing required directory: /$dir"
+done
 
 if readelf -l "$BUSYBOX" 2>/dev/null | grep -q 'INTERP'; then
     fail "BusyBox is dynamically linked; build a static BusyBox for the initramfs"
@@ -108,7 +112,7 @@ mount --move /dev /newroot/dev
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 echo "BareLinux: handing off to systemd"
-exec switch_root /newroot /usr/lib/systemd/systemd
+exec switch_root /newroot /sbin/init
 echo "BareLinux: systemd handoff failed"
 exec /bin/sh
 INIT
@@ -127,7 +131,7 @@ default_entry: BareLinux
     protocol: linux
     kernel_path: boot():/boot/vmlinuz
     module_path: boot():/boot/initramfs.cpio.gz
-    cmdline: loglevel=4 ro
+    cmdline: loglevel=4 ro console=ttyS0 systemd.log_target=console systemd.log_level=info
 CONF
 
 xorriso -as mkisofs \
