@@ -2,7 +2,7 @@
 # Format: package<TAB>version<TAB>archive_url<TAB>sha256
 # '-' means the upstream SHA-256 has not yet been independently verified.
 # The fetch script refuses to download while any digest is missing.
-binutils	2.47	https://sourceware.org/pub/binutils/releases/binutils-2.47.tar.xz	-
+binutils	2.47	https://sourceware.org/pub/binutils/releases/binutils-2.47.tar.xz	154ab23b60070e8f27013c22977f1129425d67d1e8acd6e13010e617811e4cff
 gcc	16.2.0	https://ftp.gnu.org/gnu/gcc/gcc-16.2.0/gcc-16.2.0.tar.xz	-
 glibc	2.44	https://ftp.gnu.org/gnu/glibc/glibc-2.44.tar.xz	-
 linux	7.1.8	https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.8.tar.xz	-
