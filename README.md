@@ -41,4 +41,4 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository curr
 
 ## Current milestone
 
-See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md).
+See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md) and the live [Build Status](docs/BUILD-STATUS.md).
