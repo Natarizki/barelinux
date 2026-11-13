@@ -91,7 +91,7 @@ jobs:
                   name = item.name
                   if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")[:-1]):
                       raise SystemExit(f"unsafe artifact path: {name!r}")
-                  if name.split("/", 1)[0] != "tools":
+                  if name.split("/", 1)[0] != "target":
                       raise SystemExit(f"unexpected artifact root: {name!r}")
                   if item.issym() or item.islnk():
                       target = item.linkname
@@ -99,12 +99,12 @@ jobs:
                           raise SystemExit(f"absolute link rejected: {name!r}")
                       resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
                       if resolved == ".." or resolved.startswith("../") or not resolved.startswith("target/"):
-                          raise SystemExit(f"artifact link escapes tools/: {name!r}")
+                          raise SystemExit(f"artifact link escapes target/: {name!r}")
                   elif not (item.isfile() or item.isdir()):
                       raise SystemExit(f"unsupported artifact member: {name!r}")
           PY
-          mkdir -p "$RUNNER_TEMP/barelinux-mlfs/target"
-          tar --no-same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs/target"
+          mkdir -p "$RUNNER_TEMP/barelinux-mlfs"
+          tar --no-same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs"
           test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/ld"
           test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/as"
 
