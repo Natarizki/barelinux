@@ -10,6 +10,8 @@ on:
       - "sources/locks/alfs-mlfs.lock"
       - "sources/manifests/mlfs-13.1-toolchain.tsv"
       - ".github/workflows/build-binutils-pass1.yml"
+      - "scripts/build-mlfs-full-alfs.sh"
+      - ".github/workflows/build-mlfs-full.yml"
 
 permissions:
   contents: read
