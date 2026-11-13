@@ -11,7 +11,7 @@ usage() {
 BareLinux Factory (BLF)
 
 Usage:
-  lfs enter [DISTRO]          Enter the isolated BLF workspace shell
+  lfs enter [DISTRO]          Open a BLF workspace shell (not a chroot)
   lfs init DISTRO             Create a distro project
   lfs doctor                  Check build-host tools and resources
   lfs DISTRO status           Show project state
