@@ -1,0 +1,58 @@
+name: Build MLFS 13.1 Cross Toolchain
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build-binutils-pass1.sh"
+      - "sources/manifests/mlfs-13.1-toolchain.tsv"
+      - ".github/workflows/build-mlfs-toolchain.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  binutils-pass1:
+    name: Compile and validate Binutils Pass 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out BareLinux
+        uses: actions/checkout@v4
+      - name: Install MLFS host prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file
+          df -h "$RUNNER_TEMP"
+      - name: Validate build script syntax
+        run: bash -n scripts/build-binutils-pass1.sh
+      - name: Compile Binutils Pass 1 from verified source
+        env:
+          BLF_BUILD_JOBS: "2"
+        run: |
+          mkdir -p "$RUNNER_TEMP/barelinux-mlfs"
+          bash scripts/build-binutils-pass1.sh "$RUNNER_TEMP/barelinux-mlfs"
+      - name: Package stage output
+        if: success()
+        run: |
+          tar -C "$RUNNER_TEMP/barelinux-mlfs" -cJf "$RUNNER_TEMP/binutils-pass1-tools.tar.xz" rootfs/tools
+          cp "$RUNNER_TEMP/barelinux-mlfs/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
+      - name: Upload verified Binutils Pass 1 artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-13.1-binutils-pass1
+          path: |
+            ${{ runner.temp }}/binutils-pass1-tools.tar.xz
+            ${{ runner.temp }}/BUILD-SUCCESS
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-binutils-pass1-logs
+          path: ${{ runner.temp }}/barelinux-mlfs/build/mlfs-13.1/binutils-pass1/*.log
+          if-no-files-found: ignore
+          retention-days: 7
