@@ -10,9 +10,14 @@ cp "$ROOT_DIR/scripts/check-sources.sh" "$TMP_DIR/scripts/"
 cp "$ROOT_DIR/scripts/fetch-sources.sh" "$TMP_DIR/scripts/"
 cp "$ROOT_DIR/sources/manifests/mlfs-13.1-toolchain.tsv" "$TMP_DIR/sources/manifests/"
 
+# Reset every digest in the isolated test copy so this test is independent of
+# how many production manifest entries have already been verified.
+sed -i '/^[^#]/s/\t[^[:space:]]*$/\t-/' "$TMP_DIR/sources/manifests/mlfs-13.1-toolchain.tsv"
+
 # Missing digests must be reported as blocked and the downloader must refuse.
+package_count="$(grep -vcE '^(#|$)' "$TMP_DIR/sources/manifests/mlfs-13.1-toolchain.tsv")"
 bash "$TMP_DIR/scripts/check-sources.sh" >"$TMP_DIR/check.out"
-grep -q 'INTEGRITY GATE: BLOCKED (5 SHA-256 digests' "$TMP_DIR/check.out"
+grep -q "INTEGRITY GATE: BLOCKED ($package_count SHA-256 digests" "$TMP_DIR/check.out"
 if bash "$TMP_DIR/scripts/fetch-sources.sh" >"$TMP_DIR/fetch.out" 2>&1; then
     printf 'ERROR: fetcher accepted a manifest with missing digests\n' >&2
     exit 1
