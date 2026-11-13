@@ -12,7 +12,7 @@ mkdir -p "$WORKSPACE"
 WORKSPACE="$(realpath -e -- "$WORKSPACE")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 
-for tool in git python3 grep find sort realpath xsltproc sed wc tr; do
+for tool in git python3 grep find sort realpath xsltproc sed wc tr sudo mountpoint; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
@@ -83,9 +83,15 @@ grep -q 'if \[ -z "\$WORKING_COPY" \]' "$JHALFS_DIR/common/libs/func_book_parser
 grep -q 'profile.arch' "$JHALFS_DIR/common/libs/func_book_parser" || fail "jhalfs profile transform invocation not found"
 
 log "Preparing a non-interactive jhalfs configuration for raw MLFS 13.1"
-BUILDDIR="$WORKSPACE/build"
+TARGET_DIR="$(dirname "$WORKSPACE")/target"
+MOUNTPOINT="/mnt/barelinux-lfs"
+BUILDDIR="$MOUNTPOINT"
 JHALFS_BUILD_DIR="$BUILDDIR/jhalfs"
-mkdir -p "$BUILDDIR"
+mkdir -p "$TARGET_DIR" "$MOUNTPOINT"
+mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
+sudo mount --bind "$TARGET_DIR" "$MOUNTPOINT"
+cleanup_alfs_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
+trap cleanup_alfs_mount EXIT
 cat > "$JHALFS_DIR/configuration" <<EOF
 BOOK_LFS_ANY="y"
 BOOK_LFS_SYSD="y"
