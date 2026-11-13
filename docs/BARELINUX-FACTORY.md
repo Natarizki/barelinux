@@ -1,6 +1,6 @@
 # BareLinux Factory (BLF)
 
-**Status:** Proposed feature; specification baseline only. No implementation or working distro export is claimed.
+**Status:** Workspace CLI milestone implemented; LFS build engine and bootable ISO export are not implemented.
 
 BareLinux Factory is the official, optional OS-building environment for creating independent Linux distributions from a BareLinux host. It uses a Linux From Scratch (LFS)-based build process and produces a standalone target root filesystem and, when the selected profile supports it, a bootable ISO image.
 
@@ -18,7 +18,7 @@ BLF is part of the official BareLinux project and roadmap, but it is not a manda
 
 ## User-facing command concept
 
-The following is the proposed command interface, not an implemented command set:
+The initial workspace command interface is implemented in `bin/lfs`. The build and export commands are deliberately fail-closed until their engines exist:
 
 ```sh
 lfs enter
@@ -93,12 +93,12 @@ BLF is a separate optional subsystem. Its installation, removal, or build failur
 
 ## Implementation roadmap
 
-1. Finalize the profile schema and command-line contract.
-2. Implement isolated workspace creation and `lfs enter`.
+1. **Workspace CLI:** project creation, profile validation, status, and factory shell (`bin/lfs`).
+2. Harden workspace isolation and define the supported build sandbox.
 3. Implement source locking, verification, and reproducible toolchain stages.
 4. Implement base-system build stages and resumable state tracking.
 5. Implement kernel, initramfs, and bootloader integration.
 6. Implement ISO export and BIOS/UEFI boot validation.
 7. Add example distro profiles and end-to-end CI tests.
 
-**Current limitation:** this document records the agreed design direction. BLF is not implemented yet, and no distro can currently be built or exported with these commands.
+**Current limitation:** the workspace CLI is implemented, but `lfs enter` currently opens a factory shell in the selected workspace; it is not a chroot or security boundary. `build` and `export` intentionally return an error until a real, isolated LFS build engine and tested ISO pipeline are available. No distro can currently be built or exported with BLF.
