@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate configuration and source integrity gate
+    name: Validate architecture, toolchain policy, and source gate
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -24,9 +24,13 @@ jobs:
           bash -n scripts/check-sources.sh
           bash -n scripts/fetch-sources.sh
           bash -n scripts/test-source-integrity.sh
+          bash -n scripts/check-toolchain.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
+
+      - name: Validate MLFS cross-toolchain policy
+        run: bash scripts/check-toolchain.sh
 
       - name: Validate pinned source versions and integrity gate
         run: bash scripts/check-sources.sh
