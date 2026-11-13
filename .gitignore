@@ -1,0 +1,13 @@
+# Build output
+/output/
+/work/
+/sources/downloads/
+/sources/extracted/
+/logs/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*~
+.DS_Store
