@@ -34,6 +34,7 @@ jobs:
           bash -n scripts/test-kernel-config.sh
           bash -n scripts/test-iso-boot.sh
           bash -n bin/lfs
+          bash -n scripts/build-binutils-pass1.sh
           bash -n scripts/test-blf-workspace.sh
 
       - name: Test BareLinux Factory workspace CLI
