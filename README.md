@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/brand/barelinux-logo.svg" alt="BareLinux logo: wordmark with white X in a black square" width="720">
+</p>
+
 # BareLinux
 
 **Minimal by default. Modular by design.**
@@ -33,6 +37,7 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository curr
 
 ## Repository layout
 
+- `assets/brand/` — official brand assets
 - `config/` — architecture and build configuration
 - `sources/manifests/` — pinned upstream source-version manifests
 - `scripts/` — build and validation scripts
