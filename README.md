@@ -46,10 +46,10 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository curr
 - `.github/workflows/` — GitHub Actions workflows
 - `docs/` — design and engineering documentation
 
-## Optional official subsystem
+## Core source-build system
 
-[**BareLinux Factory (BLF)**](docs/BARELINUX-FACTORY.md) is the official, optional LFS-based OS-building environment. Its initial workspace CLI is implemented; the LFS build engine and bootable ISO exporter are still under development.
+[**BareLinux Core LFS Build System**](docs/BARELINUX-FACTORY.md) is mandatory to the BareLinux build architecture and follows MLFS 13.1. The workspace CLI is implemented; real source compilation, isolated build stages, and bootable ISO export are still under development.
 
 ## Current milestone
 
-See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md), the [BareLinux Factory specification](docs/BARELINUX-FACTORY.md), and the live [Build Status](docs/BUILD-STATUS.md).
+See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md), the [Core LFS Build System specification](docs/BARELINUX-FACTORY.md), and the live [Build Status](docs/BUILD-STATUS.md).
