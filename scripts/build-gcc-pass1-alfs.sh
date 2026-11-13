@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKSPACE_ARG="${1:-}"
+LFS_HOME_ARCHIVE="${LFS_HOME_ARCHIVE:-}"
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 log() { printf '[gcc-pass1-alfs] %s\n' "$*" >&2; }
 
@@ -14,7 +15,7 @@ WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 [[ "$(stat -c '%u' "$WORKSPACE")" == "$(id -u)" ]] || fail "workspace must be owned by current build user"
 
-for tool in bash git python3 xsltproc curl sha256sum sha512sum tar make gcc g++ ld as realpath stat df awk grep tee nproc sudo mountpoint script groupadd useradd id; do
+for tool in bash git python3 xsltproc curl sha256sum sha512sum tar make gcc g++ ld as realpath stat df awk grep tee nproc sudo mountpoint script groupadd useradd id getent chown; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
@@ -126,10 +127,18 @@ log "Executing GCC Pass 1 through the generated jhalfs Makefile target"
 MOUNTPOINT="/mnt/barelinux-lfs"
 sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
-sudo groupadd --force lfs
-if ! id lfs >/dev/null 2>&1; then
-  sudo useradd --create-home --home-dir /home/lfs --shell /bin/bash --gid lfs lfs
-fi
+LFS_UID="$(awk -F= '$1=="lfs_uid" {print $2}' "$TARGET/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS")"
+LFS_GID="$(awk -F= '$1=="lfs_gid" {print $2}' "$TARGET/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS")"
+[[ "$LFS_UID" =~ ^[0-9]+$ && "$LFS_GID" =~ ^[0-9]+$ ]] || fail "Binutils artifact has invalid LFS account IDs"
+[[ -n "$LFS_HOME_ARCHIVE" && -s "$LFS_HOME_ARCHIVE" ]] || fail "verified LFS home archive is missing"
+getent passwd lfs >/dev/null 2>&1 && fail "unexpected existing host account named lfs"
+getent group lfs >/dev/null 2>&1 && fail "unexpected existing host group named lfs"
+getent passwd "$LFS_UID" >/dev/null 2>&1 && fail "recorded LFS UID is already in use"
+getent group "$LFS_GID" >/dev/null 2>&1 && fail "recorded LFS GID is already in use"
+sudo groupadd --gid "$LFS_GID" lfs
+sudo useradd --uid "$LFS_UID" --gid "$LFS_GID" --create-home --home-dir /home/lfs --shell /bin/bash --skel /dev/null lfs
+sudo tar --no-same-owner -xJf "$LFS_HOME_ARCHIVE" -C /home
+sudo chown -R lfs:lfs /home/lfs
 sudo mount --bind "$TARGET" "$MOUNTPOINT"
 cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
 trap cleanup_build_mount EXIT
