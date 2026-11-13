@@ -13,6 +13,7 @@ INSTALLED="$DEST/usr/local/bin/lfs"
 
 bash "$LFS" help | grep -q "lfs doctor"
 bash "$LFS" init TestDistro
+ grep -Fxq 'BUILD_SYSTEM=mlfs' "$BLF_HOME/workspaces/TestDistro/distro.conf"
 [[ -f "$BLF_HOME/workspaces/TestDistro/distro.conf" ]]
 for d in sources build rootfs output logs; do
   [[ -d "$BLF_HOME/workspaces/TestDistro/$d" ]]
@@ -27,4 +28,5 @@ fi
 if bash "$LFS" TestDistro export >/dev/null 2>&1; then
   echo 'unimplemented export unexpectedly succeeded' >&2; exit 1
 fi
-echo 'BareLinux Factory workspace tests: OK'
+if grep -qi 'optional' "$ROOT/docs/BARELINUX-FACTORY.md"; then echo 'core build system must not be documented as optional' >&2; exit 1; fi
+echo 'BareLinux core LFS workspace tests: OK'
