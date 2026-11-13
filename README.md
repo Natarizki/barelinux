@@ -10,11 +10,12 @@ BareLinux is an independent, x86_64 Linux distribution designed around an immuta
 
 ## Project status
 
-BareLinux is in the early **M1 — Build Foundation** stage. The repository now includes a real Binutils Pass 1 build stage from verified MLFS source. It does not yet produce a complete root filesystem or bootable image.
+BareLinux is in the early **M1 — Build Foundation** stage. The repository includes a real Binutils Pass 1 build from verified MLFS source, but does not yet produce a complete root filesystem or bootable image.
 
 ## Design baseline
 
-- Build foundation: Multilib Linux From Scratch (MLFS) 13.1
+- Build instructions: raw Multilib Linux From Scratch (MLFS) 13.1
+- Automation: ALFS/jhalfs with a BareLinux MLFS adapter
 - Architecture: x86_64 with full i686 multilib
 - CPU baseline: x86-64; AVX2 is optional and runtime-aware
 - System model: immutable, snapshot-based
@@ -30,10 +31,11 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository now 
 ## Development principles
 
 1. Pin source versions and verify source integrity before building.
-2. Keep the build host separate from the target root filesystem.
-3. Do not claim a build stage is complete until its output is tested.
-4. Reject unverified ABI adaptations and incompatible packages.
-5. Keep core-system changes transactional and recoverable.
+2. Preserve raw MLFS instructions, including multilib branches.
+3. Keep the build host separate from the target root filesystem.
+4. Do not claim a build stage is complete until its output is tested.
+5. Reject unverified ABI adaptations and incompatible packages.
+6. Keep core-system changes transactional and recoverable.
 
 ## Repository layout
 
@@ -48,8 +50,10 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository now 
 
 ## Core source-build system
 
-[**BareLinux Core LFS Build System**](docs/BARELINUX-FACTORY.md) is mandatory to the BareLinux build architecture and follows MLFS 13.1. The workspace CLI and real Binutils Pass 1 build stage are implemented; GCC, the remaining MLFS stages, secure build isolation, and bootable ISO export are still under development.
+[**BareLinux Core Build System**](docs/BARELINUX-FACTORY.md) is mandatory. It uses raw MLFS 13.1 as the recipe authority and ALFS/jhalfs as the automation engine, connected through a BareLinux adapter. The workspace CLI and real Binutils Pass 1 build stage are implemented; ALFS–MLFS compatibility, the remaining package stages, secure build isolation, and bootable ISO export are still under development.
+
+See the [ALFS + Raw MLFS integration specification](docs/ALFS-MLFS-INTEGRATION.md) for the exact upstream and adapter boundary.
 
 ## Current milestone
 
-See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md), the [Core LFS Build System specification](docs/BARELINUX-FACTORY.md), and the live [Build Status](docs/BUILD-STATUS.md).
+See [M1 Build Foundation](docs/M1-BUILD-FOUNDATION.md), the [Core Build System specification](docs/BARELINUX-FACTORY.md), and the live [Build Status](docs/BUILD-STATUS.md).
