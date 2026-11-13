@@ -136,7 +136,7 @@ RECIPE_SHA="$(sha256sum "$RECIPE" | awk '{print $1}')"
   printf 'stage=binutils-pass1\npackage=binutils\nversion=%s\n' "$VERSION"
   printf 'source_sha256=%s\nrecipe_sha256=%s\n' "$DIGEST" "$RECIPE_SHA"
   printf 'mlfs_commit=%s\njhalfs_commit=%s\ntarget=%s\nprefix=%s\n' "$MLFS_COMMIT" "$JHALFS_COMMIT" "$LFS_TGT" "$TOOLS"
-  printf 'host_arch=%s\ncompleted_utc=%s\nstatus=success\n' "$(uname -m)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'host_arch=%s\nlfs_uid=%s\nlfs_gid=%s\ncompleted_utc=%s\nstatus=success\n' "$(uname -m)" "$(id -u lfs)" "$(id -g lfs)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "$STAGE/BUILD-SUCCESS"
 
 log "PASS: generated ALFS recipe compiled, installed, and validated Binutils Pass 1"
