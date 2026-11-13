@@ -24,7 +24,7 @@ jobs:
       - name: Install audit prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends git python3 findutils grep coreutils xsltproc docbook-xml docbook-xsl
+          sudo apt-get install --yes --no-install-recommends git python3 findutils grep coreutils xsltproc docbook-xml docbook-xsl xsltproc docbook-xml docbook-xsl
 
       - name: Validate audit script syntax
         run: bash -n scripts/validate-alfs-mlfs-sources.sh
