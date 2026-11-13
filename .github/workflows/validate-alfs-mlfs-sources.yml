@@ -1,0 +1,47 @@
+name: Validate ALFS Raw MLFS Sources
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/validate-alfs-mlfs-sources.sh"
+      - "sources/locks/alfs-mlfs.lock"
+      - ".github/workflows/validate-alfs-mlfs-sources.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  source-audit:
+    name: Fetch and audit raw MLFS plus pinned jhalfs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out BareLinux
+        uses: actions/checkout@v4
+
+      - name: Install audit prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends git python3 findutils grep coreutils
+
+      - name: Validate audit script syntax
+        run: bash -n scripts/validate-alfs-mlfs-sources.sh
+
+      - name: Fetch raw MLFS and pinned ALFS sources
+        run: |
+          mkdir -p "$RUNNER_TEMP/barelinux-alfs-mlfs"
+          bash scripts/validate-alfs-mlfs-sources.sh "$RUNNER_TEMP/barelinux-alfs-mlfs"
+
+      - name: Upload source audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-alfs-raw-mlfs-source-audit
+          path: |
+            ${{ runner.temp }}/barelinux-alfs-mlfs/audit/REPORT.txt
+            ${{ runner.temp }}/barelinux-alfs-mlfs/audit/source-audit.json
+            ${{ runner.temp }}/barelinux-alfs-mlfs/audit/*-files.txt
+            ${{ runner.temp }}/barelinux-alfs-mlfs/audit/jhalfs-file-inventory.txt
+          if-no-files-found: error
+          retention-days: 14
