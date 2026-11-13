@@ -14,7 +14,7 @@ WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 [[ "$(stat -c '%u' "$WORKSPACE")" == "$(id -u)" ]] || fail "workspace must be owned by current build user"
 
-for tool in bash git python3 xsltproc curl sha256sum tar make gcc g++ ld as realpath stat df awk grep tee nproc; do
+for tool in bash git python3 xsltproc curl sha256sum tar make gcc g++ ld as realpath stat df awk grep tee nproc sudo mountpoint script; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
@@ -42,7 +42,7 @@ TARGET="$WORKSPACE/target"
 SOURCES="$TARGET/sources"
 TOOLS="$TARGET/tools"
 STAGE="$TARGET/build/mlfs-13.1/binutils-pass1"
-RECIPE="$ALFS_WORK/build/jhalfs/lfs-commands/chapter05/501-binutils-pass1"
+RECIPE="$TARGET/jhalfs/lfs-commands/chapter05/501-binutils-pass1"
 ARCHIVE="$SOURCES/${URL##*/}"
 
 [[ ! -e "$ALFS_WORK" && ! -e "$TARGET" ]] || fail "workspace already contains alfs/ or target/; use a fresh workspace"
@@ -102,11 +102,17 @@ export MAKEFLAGS="-j${BLF_BUILD_JOBS:-2}"
 JOBS="${BLF_BUILD_JOBS:-2}"
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || fail "BLF_BUILD_JOBS must be a positive integer"
 
-log "Executing the generated MLFS Binutils Pass 1 command script"
-(
-  cd "$WORKSPACE"
-  bash "$RECIPE"
-) 2>&1 | tee "$STAGE/build.log"
+log "Executing Binutils Pass 1 through the generated jhalfs Makefile target"
+MOUNTPOINT="/mnt/barelinux-lfs"
+mkdir -p "$MOUNTPOINT"
+mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
+sudo mount --bind "$TARGET" "$MOUNTPOINT"
+cleanup_build_mount() { mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"; }
+trap cleanup_build_mount EXIT
+grep -Fq '501-binutils-pass1:' "$MOUNTPOINT/jhalfs/Makefile" || fail "jhalfs Makefile lacks the Binutils Pass 1 target"
+script -q -e -c "stty rows 24 cols 80; make -C '$MOUNTPOINT/jhalfs' BREAKPOINT=501-binutils-pass1" /dev/null 2>&1 | tee "$STAGE/build.log"
+cleanup_build_mount
+trap - EXIT
 
 CROSS_LD="$TOOLS/$LFS_TGT/bin/ld"
 CROSS_AS="$TOOLS/$LFS_TGT/bin/as"
