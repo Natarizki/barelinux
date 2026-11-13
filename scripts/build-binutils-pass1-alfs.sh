@@ -116,7 +116,7 @@ BUILD_STATUS="${PIPESTATUS[0]}"
 set -e
 [[ -e "$MOUNTPOINT/jhalfs/501-binutils-pass1" ]] || fail "jhalfs did not complete 501-binutils-pass1"
 if (( BUILD_STATUS != 0 )); then
-  sed -E 's/\\x1B\\[[0-9;]*[[:alpha:]]//g' "$STAGE/build.log" > "$STAGE/build-clean.log"
+  sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$STAGE/build.log" > "$STAGE/build-clean.log"
   grep -Fq "The build has been stopped at 501-binutils-pass1 as requested" "$STAGE/build-clean.log" || fail "jhalfs Makefile failed before its requested 501-binutils-pass1 checkpoint (exit $BUILD_STATUS)"
   log "jhalfs reached the requested 501-binutils-pass1 breakpoint; its documented stop status is accepted"
 fi
