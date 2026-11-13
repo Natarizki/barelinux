@@ -28,8 +28,11 @@ grep -qx 'AVX2_POLICY=optional' "$ARCH_CONFIG" ||
 grep -qx 'MULTILIB=full' "$ARCH_CONFIG" ||
     fail "Full multilib must remain enabled"
 
-grep -qx 'BUILD_SYSTEM=lfs' "$BUILD_CONFIG" ||
-    fail "BUILD_SYSTEM must be lfs"
+grep -qx 'BUILD_SYSTEM=mlfs' "$BUILD_CONFIG" ||
+    fail "BUILD_SYSTEM must be mlfs"
+
+grep -qx 'MLFS_VERSION=13.1' "$BUILD_CONFIG" ||
+    fail "MLFS_VERSION must be 13.1"
 
 grep -qx 'TARGET_ARCH=x86_64' "$BUILD_CONFIG" ||
     fail "Build target must be x86_64"
