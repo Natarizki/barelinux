@@ -34,7 +34,7 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository curr
 ## Repository layout
 
 - `config/` — architecture and build configuration
-- `sources/manifests/` — pinned source manifests (to be added)
+- `sources/manifests/` — pinned upstream source-version manifests
 - `scripts/` — build and validation scripts
 - `.github/workflows/` — GitHub Actions workflows
 - `docs/` — design and engineering documentation
