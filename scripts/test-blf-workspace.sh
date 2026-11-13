@@ -19,7 +19,8 @@ for d in sources build rootfs output logs; do
   [[ -d "$BLF_HOME/workspaces/TestDistro/$d" ]]
 done
 bash "$LFS" TestDistro status | grep -q 'Profile: valid'
-bash "$LFS" TestDistro build plan | grep -q 'full-book'
+bash "$LFS" TestDistro build plan >"$TMP/plan.out"
+grep -q 'full-book' "$TMP/plan.out"
 if bash "$LFS" TestDistro build full-book >"$TMP/full-book.out" 2>&1; then
   echo 'full-book unexpectedly ran without its verified ALFS checkpoint' >&2; exit 1
 fi
