@@ -57,6 +57,24 @@ else
     failures=1
 fi
 
+if printf 'int main(void) { return 0; }\n' | gcc -m32 -x c - -o "$tmpdir/host-i686-test"; then
+    if readelf -h "$tmpdir/host-i686-test" | grep -q 'Class:.*ELF32' &&
+       readelf -h "$tmpdir/host-i686-test" | grep -q 'Machine:.*Intel 80386'; then
+        if "$tmpdir/host-i686-test"; then
+            printf 'OK: host can compile and execute an i686 ELF32 program\n'
+        else
+            printf 'ERROR: i686 executable was built but could not run\n' >&2
+            failures=1
+        fi
+    else
+        printf 'ERROR: -m32 output is not an i686 ELF32 executable\n' >&2
+        failures=1
+    fi
+else
+    printf 'ERROR: host cannot link an i686 executable; install working 32-bit development libraries\n' >&2
+    failures=1
+fi
+
 if (( failures != 0 )); then
     printf '\nHOST PREREQUISITE CHECK: FAILED\n' >&2
     if (("${#missing[@]}" > 0)); then
