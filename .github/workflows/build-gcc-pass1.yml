@@ -1,0 +1,130 @@
+name: Build GCC Pass 1
+
+on:
+  workflow_run:
+    workflows: ["Build Binutils Pass 1"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      binutils_run_id:
+        description: "Successful Build Binutils Pass 1 workflow run ID"
+        required: true
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build-gcc-pass1-alfs.sh"
+      - "scripts/validate-alfs-mlfs-sources.sh"
+      - "sources/locks/alfs-mlfs.lock"
+      - "sources/manifests/mlfs-13.1-gcc-pass1.tsv"
+      - ".github/workflows/build-gcc-pass1.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gcc-pass1:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    name: Build GCC Pass 1 from generated raw MLFS recipe
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out BareLinux
+        uses: actions/checkout@v4
+
+      - name: Install MLFS and ALFS host prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends build-essential bison flex texinfo python3 curl xz-utils ca-certificates file git xsltproc docbook-xml docbook-xsl
+
+      - name: Validate build script syntax
+        run: |
+          bash -n scripts/build-gcc-pass1-alfs.sh
+          bash -n scripts/validate-alfs-mlfs-sources.sh
+
+      - name: Download successful Binutils Pass 1 prerequisite
+        uses: actions/download-artifact@v4
+        with:
+          name: barelinux-mlfs-13.1-binutils-pass1
+          path: ${{ runner.temp }}/binutils-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id || inputs.binutils_run_id }}
+
+      - name: Validate and install Binutils prerequisite
+        run: |
+          set -euo pipefail
+          ARTIFACT="$RUNNER_TEMP/binutils-artifact"
+          MARKER="$ARTIFACT/BUILD-SUCCESS"
+          ARCHIVE="$ARTIFACT/binutils-pass1-tools.tar.xz"
+          test -s "$MARKER"
+          test -s "$ARCHIVE"
+          grep -Fxq 'stage=binutils-pass1' "$MARKER"
+          grep -Fxq 'status=success' "$MARKER"
+          MLFS_COMMIT="$(awk -F= '$1=="MLFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
+          JHALFS_COMMIT="$(awk -F= '$1=="JHALFS_COMMIT" {print $2}' sources/locks/alfs-mlfs.lock)"
+          grep -Fxq "mlfs_commit=$MLFS_COMMIT" "$MARKER"
+          grep -Fxq "jhalfs_commit=$JHALFS_COMMIT" "$MARKER"
+          python3 - "$ARCHIVE" <<'PY'
+          import posixpath, sys, tarfile
+          with tarfile.open(sys.argv[1], "r:xz") as tf:
+              members = tf.getmembers()
+              if not members:
+                  raise SystemExit("empty Binutils artifact")
+              for item in members:
+                  name = item.name
+                  if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")[:-1]):
+                      raise SystemExit(f"unsafe artifact path: {name!r}")
+                  if name.split("/", 1)[0] != "tools":
+                      raise SystemExit(f"unexpected artifact root: {name!r}")
+                  if item.issym() or item.islnk():
+                      target = item.linkname
+                      if target.startswith("/"):
+                          raise SystemExit(f"absolute link rejected: {name!r}")
+                      resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
+                      if resolved == ".." or resolved.startswith("../") or not resolved.startswith("tools/"):
+                          raise SystemExit(f"artifact link escapes tools/: {name!r}")
+                  elif not (item.isfile() or item.isdir()):
+                      raise SystemExit(f"unsupported artifact member: {name!r}")
+          PY
+          mkdir -p "$RUNNER_TEMP/barelinux-mlfs/target"
+          tar --no-same-owner -xJf "$ARCHIVE" -C "$RUNNER_TEMP/barelinux-mlfs/target"
+          test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/ld"
+          test -x "$RUNNER_TEMP/barelinux-mlfs/target/tools/x86_64-lfs-linux-gnu/bin/as"
+
+      - name: Generate and execute ALFS GCC Pass 1 recipe
+        env:
+          BLF_BUILD_JOBS: "2"
+        run: |
+          bash scripts/build-gcc-pass1-alfs.sh "$RUNNER_TEMP/barelinux-mlfs"
+
+      - name: Package verified tool prefix
+        if: success()
+        run: |
+          tar -C "$RUNNER_TEMP/barelinux-mlfs/target" -cJf "$RUNNER_TEMP/gcc-pass1-tools.tar.xz" tools
+          cp "$RUNNER_TEMP/barelinux-mlfs/target/build/mlfs-13.1/gcc-pass1/BUILD-SUCCESS" "$RUNNER_TEMP/"
+
+      - name: Upload verified GCC Pass 1 artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-13.1-gcc-pass1
+          path: |
+            ${{ runner.temp }}/gcc-pass1-tools.tar.xz
+            ${{ runner.temp }}/BUILD-SUCCESS
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build and generated-recipe logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barelinux-mlfs-gcc-pass1-alfs-logs
+          path: |
+            ${{ runner.temp }}/barelinux-mlfs/target/build/mlfs-13.1/gcc-pass1/*.log
+            ${{ runner.temp }}/barelinux-mlfs/alfs/audit/REPORT.txt
+            ${{ runner.temp }}/barelinux-mlfs/alfs/audit/generated-command-inventory.txt
+          if-no-files-found: ignore
+          retention-days: 7
