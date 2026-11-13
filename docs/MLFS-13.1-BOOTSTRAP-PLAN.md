@@ -28,7 +28,7 @@ Official stage outline: https://www.linuxfromscratch.org/mlfs/view/stable/part3.
 
 ## Important separation of responsibilities
 
-- The five-entry mlfs-13.1-toolchain.tsv file is currently only an initial source-integrity gate. It is not a complete MLFS package manifest.
+- The five-entry mlfs-13.1-toolchain.tsv file is only an initial source-integrity gate. The new mlfs-13.1-package-inventory.tsv records 83 unique package/build inputs from the MLFS 13.1 Chapters 5-8 package sequence. It is an inventory, not a download manifest: exact archive URLs, SHA-256 values, and Chapter 3 patch records still need to be locked separately.
 - systemd is part of the eventual target userspace, not one of the five cross-toolchain bootstrap components.
 - The current manifest's systemd entry must not be interpreted as permission to build systemd during cross-toolchain bootstrap.
 - The kernel API headers used by the cross-toolchain are not the same thing as the final BareLinux kernel image.
@@ -41,6 +41,12 @@ The MLFS host-requirements chapter recommends at least four CPU cores and 8 GB R
 The current CI host check is an initial prerequisite smoke test only. Before running a real MLFS build, extend it to verify the complete MLFS 13.1 host requirements and explicitly test that the host can compile and execute a 32-bit i686 program. The current Arch container setup has not yet demonstrated that multilib host capability.
 
 Reference: https://www.linuxfromscratch.org/mlfs/view/stable/chapter02/hostreqs.html
+
+## Package inventory
+
+The current package inventory is maintained in [mlfs-13.1-package-inventory.tsv](../sources/manifests/mlfs-13.1-package-inventory.tsv) and checked by `scripts/check-package-inventory.sh`. It separates cross-toolchain passes, cross-compiled temporary tools, chroot temporary tools, and final-system packages. GRUB is recorded as reference-only because BareLinux uses Limine. The MLFS Linux API headers are retained, while the final BareLinux kernel source/configuration is tracked separately.
+
+The inventory does not yet claim to include every supplemental documentation archive listed in Chapter 3. Those can be tracked separately if the build or documentation policy needs them.
 
 ## Source integrity policy
 
@@ -77,7 +83,8 @@ Completed:
 - CI validation of configuration, host smoke checks, and source-integrity gate behavior
 
 Not yet completed:
-- Full MLFS package and patch manifest
+- 83-entry MLFS 13.1 build-package inventory and CI inventory validator
+- Full source URL/SHA-256 lockfile and Chapter 3 patch manifest
 - Verified digests for every required archive and patch
 - Complete host-requirements and 32-bit execution checks
 - Reproducibly pinned container and package snapshot
