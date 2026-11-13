@@ -12,7 +12,15 @@
 
 These checks validate repository logic. They do not prove that MLFS has been compiled or that an ISO boots.
 
-## Current build execution\n\n- Binutils Pass 1 is built and validated through the generated jhalfs Makefile.\n- A continuous six-hour full-MLFS workflow resumed from the verified Binutils artifact and reached the generated `502-gcc-pass1` target, but failed during jhalfs' LFS-user/root privilege transition. The runner now provisions a temporary, validated sudoers rule for the disposable `lfs` account and removes it on exit; the fresh Binutils checkpoint succeeded and automatically triggered a full-book retry; that workflow is currently preparing the hosted runner and has not yet restarted jhalfs.\n\n## Not built yet
+## Current build execution
+
+- Binutils Pass 1 is built and validated through the generated jhalfs Makefile.
+- The first full-book attempts restored the verified checkpoint and entered jhalfs target `502-gcc-pass1`, but failed because `gcc-16.2.0.tar.xz` was absent from the build root's `sources/` directory.
+- The failure log was inspected from the uploaded workflow artifact; it showed a missing source archive, not a compiler error.
+- The source-generation configuration now enables jhalfs' built-in source retrieval, uses curl retries, and keeps the source downloads in the build root. The full-build runner now checks the complete URL inventory, missing-download report, and book-provided MD5 list before starting the Makefile.
+- A fresh Binutils checkpoint run will regenerate the source cache with these settings and trigger another full-book attempt. This fix has been committed but has not yet passed a new end-to-end run.
+
+## Not built yet
 
 - Complete, independently verified SHA-256 source lockfile for every required MLFS archive and patch
 - Complete MLFS cross-toolchain, temporary toolchain, and final userspace (full-book workflow pending)
