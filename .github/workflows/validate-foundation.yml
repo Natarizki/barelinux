@@ -25,12 +25,21 @@ jobs:
           bash -n scripts/fetch-sources.sh
           bash -n scripts/test-source-integrity.sh
           bash -n scripts/check-toolchain.sh
+          bash -n scripts/check-host.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
 
       - name: Validate MLFS cross-toolchain policy
         run: bash scripts/check-toolchain.sh
+
+      - name: Validate MLFS host prerequisites in an isolated Arch container
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            archlinux:latest \
+            bash -euc 'pacman -Sy --noconfirm --needed base-devel perl python texinfo; bash scripts/check-host.sh'
 
       - name: Validate pinned source versions and integrity gate
         run: bash scripts/check-sources.sh
