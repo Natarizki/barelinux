@@ -3,7 +3,7 @@
 # Format: package<TAB>version<TAB>build_stage<TAB>barelinux_policy
 # This is an inventory, NOT a download manifest. URLs and SHA-256 values belong
 # in a separate verified source lockfile; no downloads are authorized by this file.
-package	version	build_stage	book_section	barelinux_policy
+package	version	build_stage	barelinux_policy
 binutils	2.47	cross-toolchain-pass1-and-pass2	build
 gcc	16.2.0	cross-toolchain-pass1-and-pass2	build
 linux	7.1.8	api-headers-and-final-kernel	build-headers;final-kernel-source-separately-pinned
