@@ -14,7 +14,7 @@ log() { printf '[barelinux-full-mlfs] %s\n' "$*" >&2; }
 WORKSPACE="$(realpath -e -- "$WORKSPACE_ARG")"
 [[ "$WORKSPACE" != "/" ]] || fail "refusing filesystem root as workspace"
 
-for tool in bash make tar python3 realpath stat df awk grep find sort sha256sum sudo mountpoint script getent groupadd useradd chown visudo; do
+for tool in bash make tar python3 realpath stat df awk grep find sort sha256sum md5sum sudo mountpoint script getent groupadd useradd chown visudo; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing prerequisite: $tool"
 done
 
