@@ -5,6 +5,7 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${BARELINUX_WORK_DIR:-${ROOT_DIR}/work}"
 ROOTFS="${BARELINUX_ROOTFS:-${WORK_DIR}/rootfs}"
 KERNEL="${BARELINUX_KERNEL:-${WORK_DIR}/kernel/bzImage}"
+KERNEL_CONFIG="${BARELINUX_KERNEL_CONFIG:-${WORK_DIR}/kernel/.config}"
 BUSYBOX="${BARELINUX_BUSYBOX:-${WORK_DIR}/initramfs-tools/busybox}"
 LIMINE_DIR="${BARELINUX_LIMINE_DIR:-${WORK_DIR}/limine}"
 OUTPUT_DIR="${BARELINUX_OUTPUT_DIR:-${ROOT_DIR}/out}"
@@ -18,6 +19,8 @@ need() { command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1";
 for cmd in mksquashfs cpio gzip xorriso sha256sum file readelf grep find install ln rm chmod; do need "$cmd"; done
 [[ -d "$ROOTFS" ]] || fail "Root filesystem directory not found: $ROOTFS"
 [[ -s "$KERNEL" ]] || fail "Kernel image not found: $KERNEL"
+[[ -f "$KERNEL_CONFIG" ]] || fail "Kernel .config not found: $KERNEL_CONFIG"
+bash "$ROOT_DIR/scripts/check-kernel-config.sh" "$KERNEL_CONFIG"
 [[ -x "$BUSYBOX" ]] || fail "A static BusyBox executable is required: $BUSYBOX"
 [[ -d "$LIMINE_DIR" ]] || fail "Limine asset directory not found: $LIMINE_DIR"
 
