@@ -37,7 +37,7 @@ jobs:
           bash -n scripts/test-blf-workspace.sh
 
       - name: Test BareLinux Factory workspace CLI
-        run: bash scripts/test-blf-workspace.sh
+        run: bash -x scripts/test-blf-workspace.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
