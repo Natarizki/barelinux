@@ -39,7 +39,7 @@ jobs:
             -v "$PWD:/workspace" \
             -w /workspace \
             archlinux:latest \
-            bash -euc 'pacman -Sy --noconfirm --needed base-devel perl python texinfo; bash scripts/check-host.sh'
+            bash -euc 'sed -i "/^#\\[multilib\\]/,/^#Include =/s/^#//" /etc/pacman.conf; pacman -Sy --noconfirm --needed base-devel perl python texinfo lib32-glibc lib32-gcc-libs; bash scripts/check-host.sh'
 
       - name: Validate pinned source versions and integrity gate
         run: bash scripts/check-sources.sh
