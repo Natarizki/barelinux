@@ -10,7 +10,7 @@ BareLinux is an independent, x86_64 Linux distribution designed around an immuta
 
 ## Project status
 
-BareLinux is in the early **M1 — Build Foundation** stage. The repository currently contains project configuration and foundation checks; it does not yet produce a bootable image.
+BareLinux is in the early **M1 — Build Foundation** stage. The repository now includes a real Binutils Pass 1 build stage from verified MLFS source. It does not yet produce a complete root filesystem or bootable image.
 
 ## Design baseline
 
@@ -48,7 +48,7 @@ BareLinux is in the early **M1 — Build Foundation** stage. The repository curr
 
 ## Core source-build system
 
-[**BareLinux Core LFS Build System**](docs/BARELINUX-FACTORY.md) is mandatory to the BareLinux build architecture and follows MLFS 13.1. The workspace CLI is implemented; real source compilation, isolated build stages, and bootable ISO export are still under development.
+[**BareLinux Core LFS Build System**](docs/BARELINUX-FACTORY.md) is mandatory to the BareLinux build architecture and follows MLFS 13.1. The workspace CLI and real Binutils Pass 1 build stage are implemented; GCC, the remaining MLFS stages, secure build isolation, and bootable ISO export are still under development.
 
 ## Current milestone
 
