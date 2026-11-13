@@ -2,6 +2,7 @@
 # BareLinux core LFS/MLFS build-system CLI (engine under active implementation).
 set -euo pipefail
 
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 BLF_ROOT="${BLF_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/barelinux-factory}"
 WORKSPACES="$BLF_ROOT/workspaces"
 
@@ -16,7 +17,7 @@ Usage:
   lfs doctor                  Check mandatory LFS build-host tools and resources
   lfs DISTRO status           Show project state
   lfs DISTRO configure        Open the distro profile in $EDITOR
-  lfs DISTRO build            Build the distro from verified MLFS/LFS sources
+  lfs DISTRO build [STAGE]    Build an MLFS stage (default: binutils-pass1)
   lfs DISTRO export           Export a validated bootable ISO
   lfs help
 
@@ -125,14 +126,18 @@ PROFILE
   *)
     [[ $# -ge 1 ]] || fail "expected a subcommand; run: lfs help"
     name="$command"; sub="$1"; shift
-    [[ $# -eq 0 ]] || fail "unexpected extra arguments"
+    if [[ "$sub" == build ]]; then
+      [[ $# -le 1 ]] || fail "usage: lfs DISTRO build [binutils-pass1]"
+    else
+      [[ $# -eq 0 ]] || fail "unexpected extra arguments"
+    fi
     dir="$(require_project "$name")"
     case "$sub" in
       status)
         validate_profile "$dir/distro.conf"
         printf 'Project: %s\nWorkspace: %s\nProfile: valid\n' "$name" "$dir"
-        if [[ -f "$dir/build/BUILD-SUCCESS" ]]; then
-          printf 'Build: completed (marker present; outputs still require validation)\n'
+        if [[ -f "$dir/build/mlfs-13.1/binutils-pass1/BUILD-SUCCESS" ]]; then
+          printf 'Binutils Pass 1: compiled (stage marker present)\n'
         else
           printf 'Build: not built\n'
         fi
@@ -150,7 +155,9 @@ PROFILE
         ;;
       build)
         validate_profile "$dir/distro.conf"
-        fail "the real MLFS build pipeline is not ready yet; source lock verification, isolated toolchain stages, and build recipes must pass before compilation. No fake build result was created."
+        stage="${1:-binutils-pass1}"
+        [[ "$stage" == "binutils-pass1" ]] || fail "unsupported build stage: $stage (available: binutils-pass1)"
+        bash "$ROOT_DIR/scripts/build-binutils-pass1.sh" "$dir"
         ;;
       export)
         validate_profile "$dir/distro.conf"
