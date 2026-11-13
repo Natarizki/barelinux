@@ -45,6 +45,9 @@ mkdir -p "$AUDIT"
 
 log "Cloning raw MLFS source from the official multilib branch"
 git clone --quiet --no-tags --single-branch --branch "$MLFS_REF" "$MLFS_REPOSITORY" "$MLFS_DIR"
+if [[ "$MLFS_COMMIT" != "UNPINNED" ]]; then
+  git -C "$MLFS_DIR" checkout --quiet --detach "$MLFS_COMMIT"
+fi
 MLFS_RESOLVED="$(git -C "$MLFS_DIR" rev-parse HEAD)"
 if [[ "$MLFS_COMMIT" != "UNPINNED" && "$MLFS_RESOLVED" != "$MLFS_COMMIT" ]]; then
   fail "resolved MLFS commit $MLFS_RESOLVED differs from locked $MLFS_COMMIT"
@@ -80,10 +83,10 @@ grep -q 'if \[ -z "\$WORKING_COPY" \]' "$JHALFS_DIR/common/libs/func_book_parser
 grep -q 'profile.arch' "$JHALFS_DIR/common/libs/func_book_parser" || fail "jhalfs profile transform invocation not found"
 
 log "Preparing generated-command directories"
-if [[ -x "$MLFS_DIR/process-scripts.sh" ]]; then
+if [[ -f "$MLFS_DIR/process-scripts.sh" ]]; then
   (cd "$MLFS_DIR" && bash process-scripts.sh)
 fi
-if [[ -x "$MLFS_DIR/git-version.sh" ]]; then
+if [[ -f "$MLFS_DIR/git-version.sh" ]]; then
   (cd "$MLFS_DIR" && bash git-version.sh systemd)
 fi
 mkdir -p "$AUDIT/commands"
@@ -143,6 +146,8 @@ find "$AUDIT/commands" -type f -print | sort > "$AUDIT/generated-command-invento
 grep -RIl -E -- '-m32|/usr/lib32|lib32|32-bit' "$AUDIT/commands" > "$AUDIT/generated-multilib-command-files.txt" || true
 [[ -s "$AUDIT/generated-multilib-command-files.txt" ]] || fail "generated jhalfs scripts contain no recognizable MLFS multilib commands"
 
+log "Archiving generated command scripts for semantic review"
+tar -C "$AUDIT" -cJf "$AUDIT/generated-commands.tar.xz" commands
 log "Writing source and compatibility report"
 python3 - "$AUDIT/source-audit.json" "$MLFS_DIR" "$JHALFS_DIR" "$MLFS_RESOLVED" "$JHALFS_RESOLVED" "$XML_COUNT" "$XSL_COUNT" "$COMMAND_COUNT" <<'PY'
 import json, pathlib, subprocess, sys
