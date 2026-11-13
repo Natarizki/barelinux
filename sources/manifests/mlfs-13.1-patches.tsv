@@ -1,0 +1,14 @@
+# BareLinux MLFS 13.1 patch inventory
+# Source: MLFS 13.1 Chapter 3.3 (Needed Patches)
+# Format: package<TAB>patch_name<TAB>archive_url<TAB>book_md5<TAB>sha256<TAB>policy
+# The book MD5 is recorded for provenance only; it is NOT accepted by the SHA-256 fetch gate.
+# '-' SHA-256 means independently verified SHA-256 is still required before download.
+bzip2	bzip2-1.0.8-install_docs-1.patch	https://www.linuxfromscratch.org/patches/downloads/bzip2/bzip2-1.0.8-install_docs-1.patch	6a5ac7e89b791aae556de0f745916f7f	-	apply
+coreutils	coreutils-9.11-i18n-1.patch	https://www.linuxfromscratch.org/patches/downloads/coreutils/coreutils-9.11-i18n-1.patch	900d64d9936516b68613271c9ebc0059	-	apply
+expect	expect-5.45.4-gcc15-1.patch	https://www.linuxfromscratch.org/patches/downloads/expect/expect-5.45.4-gcc15-1.patch	0ca4d6bb8d572fbcdb13cb36cd34833e	-	apply
+glibc	glibc-2.44-upstream_fixes-1.patch	https://www.linuxfromscratch.org/patches/downloads/glibc/glibc-2.44-upstream_fixes-1.patch	990574184b25aa3029a2444e81865098	-	apply
+glibc	glibc-fhs-1.patch	https://www.linuxfromscratch.org/patches/downloads/glibc/glibc-fhs-1.patch	9a5997c3452909b1769918c759eff8a2	-	review-for-barelinux-fhs
+kbd	kbd-2.10.0-backspace-1.patch	https://www.linuxfromscratch.org/patches/downloads/kbd/kbd-2.10.0-backspace-1.patch	f75cca16a38da6caa7d52151f7136895	-	apply
+python	Python-3.14.7-openssl_4-1.patch	https://www.linuxfromscratch.org/patches/downloads/Python/Python-3.14.7-openssl_4-1.patch	597d7737df1b4ea4e184c193da523050	-	apply
+tar	tar-1.35-acl_fix-1.patch	https://www.linuxfromscratch.org/patches/downloads/tar/tar-1.35-acl_fix-1.patch	dbab49e317105539611866dac5dd54f6	apply
+openrc	openrc-0.63.3-lock-1.patch	https://www.linuxfromscratch.org/glfs/view/dev/download/openrc/openrc-0.63.3-lock-1.patch	8f469b5cb5136d6cac7482d80278a952	-	excluded-systemd-init
