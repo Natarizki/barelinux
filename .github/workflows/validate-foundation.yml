@@ -30,6 +30,8 @@ jobs:
           bash -n scripts/check-patch-inventory.sh
           bash -n scripts/build-iso.sh
           bash -n scripts/test-iso-builder.sh
+          bash -n scripts/check-kernel-config.sh
+          bash -n scripts/test-kernel-config.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
@@ -44,6 +46,9 @@ jobs:
             -w /workspace \
             archlinux:latest \
             bash -euc 'sed -i "/^#\\[multilib\\]/,/^#Include =/s/^#//" /etc/pacman.conf; pacman -Sy --noconfirm --needed base-devel perl python texinfo lib32-glibc lib32-gcc-libs; bash scripts/check-host.sh'
+
+      - name: Test live kernel configuration validator
+        run: bash scripts/test-kernel-config.sh
 
       - name: Test ISO builder rejects incomplete inputs
         run: bash scripts/test-iso-builder.sh
