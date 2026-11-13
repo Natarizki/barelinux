@@ -24,7 +24,7 @@ The source manifest records versions and upstream archive locations. A source is
 - Full multilib is mandatory; a 64-bit-only compiler is not an acceptable milestone.
 - Toolchain triplets, compiler flags, library directories, and bootstrap order must follow MLFS 13.1 rather than locally invented values.
 - Sysroot and cross-tools live under the ignored `work/` directory.
-- Host prerequisite validation checks development commands, GNU tool aliases, a working C++ compiler, the Linux kernel baseline, and UNIX 98 PTY availability.
+- Host prerequisite validation checks development commands, GNU tool aliases, a working C++ compiler, an executable i686 ELF32 test program, the Linux kernel baseline, and UNIX 98 PTY availability.
 - The container image currently uses the mutable `archlinux:latest` tag; reproducible builds still require pinning its digest and locking its package snapshot.
 - The build must fail closed if required source digests are absent.
 
@@ -41,6 +41,10 @@ The policy is recorded in `config/toolchain.conf` and checked by `scripts/check-
 7. Assemble a minimal root filesystem.
 8. Produce a bootable development ISO with Limine.
 9. Boot-test the image in CI where runner capabilities permit.
+
+## Detailed bootstrap plan
+
+See [MLFS 13.1 Bootstrap Plan](MLFS-13.1-BOOTSTRAP-PLAN.md) for the official cross-toolchain order, host requirements, source-integrity rules, and CI build design.
 
 ## Integrity gate
 
