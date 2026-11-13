@@ -32,6 +32,7 @@ jobs:
           bash -n scripts/test-iso-builder.sh
           bash -n scripts/check-kernel-config.sh
           bash -n scripts/test-kernel-config.sh
+          bash -n scripts/test-iso-boot.sh
 
       - name: Validate BareLinux configuration
         run: bash scripts/check-config.sh
