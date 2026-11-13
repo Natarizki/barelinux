@@ -5,6 +5,11 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 export BLF_HOME="$TMP/factory"
 LFS="$ROOT/bin/lfs"
+DEST="$TMP/stage"
+make -s -C "$ROOT" install DESTDIR="$DEST" PREFIX=/usr/local
+INSTALLED="$DEST/usr/local/bin/lfs"
+[[ -x "$INSTALLED" ]]
+"$INSTALLED" help | grep -q "lfs doctor"
 
 bash "$LFS" help | grep -q "lfs doctor"
 bash "$LFS" init TestDistro
