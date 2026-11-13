@@ -6,6 +6,7 @@ trap 'rm -rf "$TMP"' EXIT
 export BLF_HOME="$TMP/factory"
 LFS="$ROOT/bin/lfs"
 
+bash "$LFS" help | grep -q "lfs doctor"
 bash "$LFS" init TestDistro
 [[ -f "$BLF_HOME/workspaces/TestDistro/distro.conf" ]]
 for d in sources build rootfs output logs; do
