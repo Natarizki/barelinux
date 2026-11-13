@@ -51,11 +51,17 @@ validate_profile() {
     [[ "$value" != *$'\n'* && "$value" != *$'\r'* ]] || fail "invalid profile value"
     seen["$key"]=1
   done < "$file"
-  for key in DISTRO_NAME DISTRO_ID DISTRO_VERSION TARGET_ARCH BUILD_SYSTEM; do
+  for key in DISTRO_NAME DISTRO_ID DISTRO_VERSION TARGET_ARCH BUILD_SYSTEM BUILD_AUTOMATION MLFS_VERSION MLFS_COMMIT JHALFS_COMMIT; do
     [[ -n "${seen[$key]+x}" ]] || fail "profile is missing $key"
   done
   grep -Fxq 'TARGET_ARCH=x86_64' "$file" || fail "this build currently supports TARGET_ARCH=x86_64 only"
   grep -Fxq 'BUILD_SYSTEM=mlfs' "$file" || fail "BareLinux requires the MLFS source-build system"
+  grep -Fxq 'BUILD_AUTOMATION=alfs' "$file" || fail "BareLinux requires ALFS/jhalfs automation"
+  grep -Fxq 'MLFS_VERSION=13.1' "$file" || fail "BareLinux requires raw MLFS 13.1"
+  expected_mlfs="$(awk -F= '$1==\"MLFS_COMMIT\" {print $2}' "$ROOT_DIR/sources/locks/alfs-mlfs.lock")"
+  expected_jhalfs="$(awk -F= '$1==\"JHALFS_COMMIT\" {print $2}' "$ROOT_DIR/sources/locks/alfs-mlfs.lock")"
+  grep -Fxq "MLFS_COMMIT=$expected_mlfs" "$file" || fail "profile MLFS commit does not match the pinned source lock"
+  grep -Fxq "JHALFS_COMMIT=$expected_jhalfs" "$file" || fail "profile jhalfs commit does not match the pinned source lock"
 }
 [[ $# -ge 1 ]] || { usage; exit 2; }
 command="$1"; shift
@@ -95,6 +101,9 @@ case "$command" in
 DISTRO_NAME=$name
 DISTRO_ID=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
 DISTRO_VERSION=0.1.0
+MLFS_VERSION=13.1
+MLFS_COMMIT=$(awk -F= '$1==\"MLFS_COMMIT\" {print $2}' "$ROOT_DIR/sources/locks/alfs-mlfs.lock")
+JHALFS_COMMIT=$(awk -F= '$1==\"JHALFS_COMMIT\" {print $2}' "$ROOT_DIR/sources/locks/alfs-mlfs.lock")
 TARGET_ARCH=x86_64
 CPU_BASELINE=x86-64
 LIBC=glibc
@@ -102,6 +111,7 @@ INIT_SYSTEM=systemd
 BOOTLOADER=limine
 FILESYSTEM=btrfs
 BUILD_SYSTEM=mlfs
+BUILD_AUTOMATION=alfs
 PROFILE_VERSION=1
 PROFILE
     mkdir -p "$dir"/{sources,build,rootfs,output,logs}
