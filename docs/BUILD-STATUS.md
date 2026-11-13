@@ -12,10 +12,10 @@
 
 These checks validate repository logic. They do not prove that MLFS has been compiled or that an ISO boots.
 
-## Not built yet
+## Current build execution\n\n- Binutils Pass 1 is built and validated through the generated jhalfs Makefile.\n- A continuous six-hour full-MLFS workflow now resumes from the verified Binutils artifact and runs the complete jhalfs Makefile. It is awaiting its first successful run.\n\n## Not built yet
 
 - Complete, independently verified SHA-256 source lockfile for every required MLFS archive and patch
-- MLFS cross-toolchain and temporary toolchain
+- Complete MLFS cross-toolchain, temporary toolchain, and final userspace (full-book workflow pending)
 - Complete MLFS chroot/final userspace root filesystem
 - BareLinux kernel image with every required live-media driver built in
 - Static initramfs BusyBox
@@ -38,4 +38,4 @@ A successful ISO assembly command is not a release pass. The image remains a bui
 
 ## Resource note
 
-The MLFS 13.1 host requirements recommend at least four CPU cores and 8 GB RAM for practical build performance. The current GitHub Actions workflow is only a foundation validator; it is not the full MLFS build runner. Full build resource availability and disk capacity must be verified before scheduling the long compile.
+The MLFS 13.1 host requirements recommend at least four CPU cores and 8 GB RAM for practical build performance. The full MLFS build runner is `.github/workflows/build-mlfs-full.yml`; it is a long-running GitHub-hosted build and has not yet proven that the complete book fits the runner's disk/time budget. Full build resource availability and disk capacity must be verified before scheduling the long compile.
