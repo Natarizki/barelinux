@@ -11,14 +11,6 @@ on:
         description: "Successful Build Binutils Pass 1 workflow run ID"
         required: true
         type: string
-  push:
-    branches: [main]
-    paths:
-      - "scripts/build-gcc-pass1-alfs.sh"
-      - "scripts/validate-alfs-mlfs-sources.sh"
-      - "sources/locks/alfs-mlfs.lock"
-      - "sources/manifests/mlfs-13.1-gcc-pass1.tsv"
-      - ".github/workflows/build-gcc-pass1.yml"
 
 permissions:
   contents: read
