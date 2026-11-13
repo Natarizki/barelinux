@@ -13,6 +13,7 @@ BareLinux Factory (BLF)
 Usage:
   lfs enter [DISTRO]          Enter the isolated BLF workspace shell
   lfs init DISTRO             Create a distro project
+  lfs doctor                  Check build-host tools and resources
   lfs DISTRO status           Show project state
   lfs DISTRO configure        Open the distro profile in $EDITOR
   lfs DISTRO build            Build the distro (build engine not yet available)
@@ -58,6 +59,29 @@ validate_profile() {
 command="$1"; shift
 case "$command" in
   help|-h|--help) usage ;;
+  doctor)
+    printf 'BareLinux Factory host preflight\\n'
+    printf 'Host architecture: %s\\n' "$(uname -m)"
+    printf 'Required target: x86_64\\n'
+    [[ "$(uname -m)" == x86_64 ]] || printf 'WARNING: host is not x86_64; cross-build support is not implemented.\\n'
+    required=(bash awk bison bzip2 cc c++ coreutils diff find gawk gcc grep gzip m4 make patch perl python3 sed tar texi2any xz ld as readelf file git curl sha256sum)
+    missing=0
+    for tool in "${required[@]}"; do
+      if command -v "$tool" >/dev/null 2>&1; then
+        printf '  [OK]      %s\\n' "$tool"
+      else
+        printf '  [MISSING] %s\\n' "$tool"
+        missing=$((missing + 1))
+      fi
+    done
+    printf '\\nAvailable workspace filesystem space:\\n'
+    df -h "$BLF_ROOT" 2>/dev/null || df -h "$HOME"
+    if (( missing > 0 )); then
+      printf '\\nMissing %d build prerequisite(s). No build was started.\\n' "$missing"
+      exit 1
+    fi
+    printf '\\nHost tool preflight passed. This does not mean the LFS toolchain or target system is built.\\n'
+    ;;
   init)
     [[ $# -eq 1 ]] || fail "usage: lfs init DISTRO"
     name="$1"; dir="$(project_dir "$name")"
