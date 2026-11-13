@@ -1,6 +1,6 @@
 # BareLinux Raw MLFS + ALFS Package Pipeline
 
-**Status:** Raw-book integration and jhalfs XSLT generation pass CI. 131 package command scripts were generated from pinned raw MLFS 13.1. The Binutils Pass 1 workflow has been switched to execute its generated ALFS recipe; the complete package pipeline is not implemented yet.
+**Status:** Raw-book integration and jhalfs XSLT generation pass CI. 131 package command scripts were generated from pinned raw MLFS 13.1. Binutils Pass 1 has successfully executed its generated ALFS recipe and published a verified tool-prefix artifact. A separate GCC Pass 1 workflow and pinned source manifest are now added; its first execution is pending.
 
 ## Goal
 
@@ -102,7 +102,7 @@ MLFS is a dependency-ordered source build, not a flat list of independent packag
 - The current package inventory is a structural inventory of 83 records, not yet proven complete against the full MLFS book.
 - Only Binutils SHA-256 is independently pinned in the initial toolchain manifest; other source digests remain pending.
 - Patch inventory SHA-256 values remain pending.
-- Binutils Pass 1 is the first package workflow being migrated to execute the ALFS-generated recipe (`.github/workflows/build-binutils-pass1.yml`); its generated-recipe build must pass before it is considered validated.
+- Binutils Pass 1 now executes and passes its ALFS-generated recipe (`.github/workflows/build-binutils-pass1.yml`). GCC Pass 1 has its own generated-recipe workflow (`.github/workflows/build-gcc-pass1.yml`) and is awaiting its first successful build.
 - Secure build isolation, remaining package recipes, final-system integration, and ISO boot acceptance remain unimplemented.
 
 These blockers are intentional fail-closed gates. Do not bypass them by trusting an unverified download, substituting host packages, or marking an unbuilt stage complete.
