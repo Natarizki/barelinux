@@ -87,9 +87,15 @@ sudo chown -R lfs:lfs /home/lfs
 # passwordless sudo only for this CI build and always remove the rule on exit.
 SUDOERS_FILE="/etc/sudoers.d/barelinux-lfs-build"
 [[ ! -e "$SUDOERS_FILE" ]] || fail "temporary BareLinux LFS sudoers rule already exists"
-printf '%s\\n' 'lfs ALL=(ALL) NOPASSWD: ALL' | sudo tee "$SUDOERS_FILE" >/dev/null
+printf '%s\n' 'lfs ALL=(ALL) NOPASSWD: ALL' | sudo tee "$SUDOERS_FILE" >/dev/null
 sudo chmod 0440 "$SUDOERS_FILE"
 sudo visudo -cf "$SUDOERS_FILE" >/dev/null
+MOUNTPOINT="/mnt/barelinux-lfs"
+cleanup_build_mount() {
+  mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"
+  sudo rm -f "$SUDOERS_FILE"
+}
+trap cleanup_build_mount EXIT
 mkdir -p "$STAGE"
 
 export LFS="$TARGET"
@@ -100,14 +106,8 @@ export MAKEFLAGS="-j${BLF_BUILD_JOBS:-2}"
 export PATH="$TOOLS/bin:$TOOLS/$LFS_TGT/bin:$PATH"
 [[ -x "$TOOLS/$LFS_TGT/bin/ld" && -x "$TOOLS/$LFS_TGT/bin/as" ]] || fail "verified cross Binutils tools are missing"
 
-MOUNTPOINT="/mnt/barelinux-lfs"
 sudo mkdir -p "$MOUNTPOINT"
 mountpoint -q "$MOUNTPOINT" && fail "ALFS build mountpoint is already mounted"
-cleanup_build_mount() {
-  mountpoint -q "$MOUNTPOINT" && sudo umount "$MOUNTPOINT"
-  sudo rm -f "$SUDOERS_FILE"
-}
-trap cleanup_build_mount EXIT
 sudo mount --bind "$TARGET" "$MOUNTPOINT"
 
 log "Running the complete jhalfs-generated MLFS Makefile; no BREAKPOINT is set"
