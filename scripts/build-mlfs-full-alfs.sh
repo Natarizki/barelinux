@@ -150,7 +150,7 @@ for path in \
 done
 [[ -x "$TARGET/usr/bin/bash" && -x "$TARGET/usr/bin/gcc" && -x "$TARGET/usr/bin/systemctl" ]] || fail "core MLFS executables are not executable"
 
-find "$TARGET" -xdev -type f -printf '%P\n' | LC_ALL=C sort > "$STAGE/installed-file-inventory.txt"
+sudo find "$TARGET" -xdev -type f -printf '%P\n' | LC_ALL=C sort > "$STAGE/installed-file-inventory.txt"
 INVENTORY_SHA="$(sha256sum "$STAGE/installed-file-inventory.txt" | awk '{print $1}')"
 {
   printf 'artifact_schema=1\nstage=mlfs-full-book\nstatus=success\n'
